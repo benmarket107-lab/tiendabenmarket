@@ -11,9 +11,10 @@ const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER;
 export default function Checkout() {
   const { cart, total, clearCart } = useCart();
   const { user } = useAuth();
-  const { deliveryPrice, whatsappNumber } = useAppContext();
+  const { deliveryPrice, whatsappNumber, addPedido } = useAppContext();
   const navigate = useNavigate();
   const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: user?.name?.split(' ')[0] || '',
@@ -35,8 +36,14 @@ export default function Checkout() {
     const grandTotal = total + deliveryPrice;
 
     const itemLines = cart
-      .map(item => `  • ${item.quantity}x ${item.name} → ${formatCurrency(item.price * item.quantity)}`)
-      .join('\n');
+      .map(item => {
+        let line = `  • ${item.quantity}x ${item.name} (${formatCurrency(item.price)} c/u) → ${formatCurrency(item.price * item.quantity)}\n    _Cód: ${item.id}_`;
+        if (item.image && !item.image.includes('placehold.co')) {
+          line += `\n    📸 _Ver foto:_ ${item.image}`;
+        }
+        return line;
+      })
+      .join('\n\n');
 
     const message = [
       '🛒 *NUEVO PEDIDO - BenMarket*',
@@ -62,15 +69,56 @@ export default function Checkout() {
     return message;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const message = buildWhatsAppMessage();
-    const encodedMessage = encodeURIComponent(message);
-    const targetNumber = whatsappNumber || import.meta.env.VITE_WHATSAPP_NUMBER || '595981000000';
-    const whatsappUrl = `https://wa.me/${targetNumber}?text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-    clearCart();
-    setSuccess(true);
+    setIsSubmitting(true);
+    try {
+      const pedido = {
+        cliente_nombre: `${formData.nombre} ${formData.apellido}`.trim(),
+        cliente_telefono: formData.telefono,
+        cliente_direccion: formData.direccion,
+        cliente_barrio: formData.barrio || null,
+        cliente_google_maps: formData.google_maps || null,
+        cliente_nota: formData.nota || null,
+        items: cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image
+        })),
+        subtotal: total,
+        delivery: deliveryPrice,
+        total: total + deliveryPrice,
+        estado: 'Pendiente',
+        user_id: user?.id || null
+      };
+
+      await addPedido(pedido);
+
+      const message = buildWhatsAppMessage();
+      const encodedMessage = encodeURIComponent(message);
+      const targetNumber = whatsappNumber || import.meta.env.VITE_WHATSAPP_NUMBER || '595981000000';
+      const whatsappUrl = `https://wa.me/${targetNumber}?text=${encodedMessage}`;
+      
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      clearCart();
+      setSuccess(true);
+    } catch (err) {
+      console.error("Error creating order:", err);
+      alert("Hubo un error al procesar tu pedido en el sistema. De todos modos te redirigiremos a WhatsApp.");
+      
+      // Fallback
+      const message = buildWhatsAppMessage();
+      const encodedMessage = encodeURIComponent(message);
+      const targetNumber = whatsappNumber || import.meta.env.VITE_WHATSAPP_NUMBER || '595981000000';
+      const whatsappUrl = `https://wa.me/${targetNumber}?text=${encodedMessage}`;
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      clearCart();
+      setSuccess(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (success) {
@@ -302,14 +350,15 @@ export default function Checkout() {
             <button
               type="submit"
               form="checkout-form"
-              className="w-full py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95"
+              disabled={isSubmitting}
+              className="w-full py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)' }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
                 <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
                 <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
               </svg>
-              Enviar pedido por WhatsApp
+              {isSubmitting ? 'Procesando...' : 'Enviar pedido por WhatsApp'}
             </button>
 
             <p className="text-xs text-center text-slate-500 mt-3">

@@ -5,6 +5,7 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [sessionUser, setSessionUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (authUser) => {
@@ -13,7 +14,7 @@ export const AuthProvider = ({ children }) => {
         .from('usuarios')
         .select('*')
         .eq('id', authUser.id)
-        .single();
+        .maybeSingle();
       
       if (!error && data) {
         return data;
@@ -43,15 +44,10 @@ export const AuthProvider = ({ children }) => {
     let active = true;
     let initialFetched = false;
 
-    const handleSession = async (session) => {
-      if (session?.user) {
-        const profile = await fetchProfile(session.user);
-        if (active) {
-          setUser(profile);
-          setLoading(false);
-        }
-      } else {
-        if (active) {
+    const handleSession = (session) => {
+      if (active) {
+        setSessionUser(session?.user || null);
+        if (!session?.user) {
           setUser(null);
           setLoading(false);
         }
@@ -71,7 +67,7 @@ export const AuthProvider = ({ children }) => {
     });
 
     // 2. Escuchar los cambios de estado de autenticación
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
 
       // Ignorar el evento inicial si getSession ya lo está procesando
@@ -80,7 +76,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       initialFetched = true;
-      await handleSession(session);
+      handleSession(session);
     });
 
     return () => {
@@ -88,6 +84,40 @@ export const AuthProvider = ({ children }) => {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Efecto separado para manejar la carga asíncrona del perfil desde la base de datos
+  useEffect(() => {
+    let active = true;
+
+    const loadProfile = async () => {
+      if (!sessionUser) {
+        if (active) {
+          setUser(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const profile = await fetchProfile(sessionUser);
+        if (active) {
+          setUser(profile);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Error cargando perfil:", err);
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      active = false;
+    };
+  }, [sessionUser]);
 
   const login = async (email, password) => {
     let { data, error } = await supabase.auth.signInWithPassword({
@@ -108,7 +138,7 @@ export const AuthProvider = ({ children }) => {
           .from('usuarios')
           .select('*')
           .eq('id', data.user.id)
-          .single();
+          .maybeSingle();
         if (p) {
           profile = p;
           break;
@@ -117,6 +147,7 @@ export const AuthProvider = ({ children }) => {
       }
       if (profile) {
         setUser(profile);
+        setSessionUser(data.user);
         return true;
       }
     }
@@ -158,6 +189,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setSessionUser(null);
   };
 
   return (

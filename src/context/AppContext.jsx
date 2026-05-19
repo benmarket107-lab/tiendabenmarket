@@ -9,6 +9,7 @@ export const AppProvider = ({ children }) => {
   const [sales, setSales] = useState(mockSales);
   const [arqueos, setArqueos] = useState(mockArqueos);
   const [users, setUsers] = useState([]);
+  const [pedidos, setPedidos] = useState([]);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [deliveryPrice, setDeliveryPrice] = useState(0);
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -45,7 +46,7 @@ export const AppProvider = ({ children }) => {
         .from('configuracion')
         .select('valor')
         .eq('clave', 'theme_colors')
-        .single();
+        .maybeSingle();
       
       if (!themeError && themeData && themeData.valor) {
         try {
@@ -62,7 +63,7 @@ export const AppProvider = ({ children }) => {
         .from('configuracion')
         .select('valor')
         .eq('clave', 'delivery_price')
-        .single();
+        .maybeSingle();
       if (!configError && configData) {
         setDeliveryPrice(Number(configData.valor) || 0);
       }
@@ -72,7 +73,7 @@ export const AppProvider = ({ children }) => {
         .from('configuracion')
         .select('valor')
         .eq('clave', 'whatsapp_number')
-        .single();
+        .maybeSingle();
       if (!waError && waData) {
         setWhatsappNumber(waData.valor || '');
       } else {
@@ -88,6 +89,17 @@ export const AppProvider = ({ children }) => {
         console.error('Error fetching users:', userError);
       } else {
         setUsers(userData || []);
+      }
+
+      // Fetch Pedidos
+      const { data: pedidosData, error: pedidosError } = await supabase
+        .from('pedidos')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (pedidosError) {
+        console.error('Error fetching pedidos:', pedidosError);
+      } else {
+        setPedidos(pedidosData || []);
       }
 
       // Fetch Categories
@@ -196,6 +208,38 @@ export const AppProvider = ({ children }) => {
 
   // Funciones de Ventas
   const addSale = (sale) => setSales([...sales, { ...sale, id: Date.now() }]);
+
+  // Funciones de Pedidos
+  const addPedido = async (pedido) => {
+    const { data, error } = await supabase
+      .from('pedidos')
+      .insert([pedido])
+      .select();
+    if (error) {
+      console.error('Error adding order to Supabase:', error);
+      throw error;
+    }
+    if (data && data[0]) {
+      setPedidos(prev => [data[0], ...prev]);
+      return data[0];
+    }
+  };
+
+  const updatePedidoEstado = async (id, estado) => {
+    const { data, error } = await supabase
+      .from('pedidos')
+      .update({ estado })
+      .eq('id', id)
+      .select();
+    if (error) {
+      console.error('Error updating order state in Supabase:', error);
+      throw error;
+    }
+    if (data && data[0]) {
+      setPedidos(prev => prev.map(p => p.id === id ? data[0] : p));
+      return data[0];
+    }
+  };
 
   // Funciones de Delivery
   const updateDeliveryPrice = async (newPrice) => {
@@ -374,6 +418,7 @@ export const AppProvider = ({ children }) => {
       products, addProduct, updateProduct, deleteProduct,
       categories,
       sales, addSale,
+      pedidos, addPedido, updatePedidoEstado,
       arqueos, addArqueo, updateArqueoStatus,
       users, addUser, updateUser, deleteUser,
       themeColor, updateThemeColor,

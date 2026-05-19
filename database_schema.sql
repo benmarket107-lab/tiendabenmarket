@@ -249,3 +249,34 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- 7. Tabla de Pedidos (Ventas Web) en Tiempo Real
+CREATE TABLE IF NOT EXISTS public.pedidos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    cliente_nombre TEXT NOT NULL,
+    cliente_telefono TEXT NOT NULL,
+    cliente_direccion TEXT NOT NULL,
+    cliente_barrio TEXT,
+    cliente_google_maps TEXT,
+    cliente_nota TEXT,
+    items JSONB NOT NULL, -- Array de objetos: [{id, name, price, quantity, image}]
+    subtotal NUMERIC NOT NULL,
+    delivery NUMERIC NOT NULL,
+    total NUMERIC NOT NULL,
+    estado TEXT DEFAULT 'Pendiente' NOT NULL, -- 'Pendiente' | 'Preparando' | 'Enviado'
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+-- Habilitar RLS
+ALTER TABLE public.pedidos ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de acceso
+CREATE POLICY "Pedidos son legibles por todos" ON public.pedidos
+    FOR SELECT USING (true);
+
+CREATE POLICY "Pedidos son insertables por todos" ON public.pedidos
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Pedidos son modificables por todos" ON public.pedidos
+    FOR UPDATE USING (true) WITH CHECK (true);
+
