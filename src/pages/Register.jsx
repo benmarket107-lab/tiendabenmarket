@@ -1,0 +1,228 @@
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
+import { Store, UserPlus, LogIn, Sparkles } from 'lucide-react';
+import logoImg from '../images/logo.png';
+
+export default function Register() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  
+  const { register, loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const registered = await register(email, password, name);
+      if (registered) {
+        setSuccess('¡Registro exitoso! Por favor inicia sesión con tus nuevas credenciales.');
+        setName('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      } else {
+        setError('Ocurrió un problema durante el registro. Intente de nuevo.');
+      }
+    } catch (err) {
+      setError(err.message || 'Error de conexión o el correo ya está registrado.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    try {
+      await loginWithGoogle();
+    } catch (err) {
+      setError('Error al registrar con Google: ' + err.message);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50">
+      {/* Sección Izquierda: Formulario de Registro */}
+      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <div className="mx-auto mb-6 flex justify-center">
+              <img src={logoImg} alt="Logo Benmarket" className="h-16 sm:h-20 w-auto object-contain drop-shadow-md" />
+            </div>
+            <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">Crear Cuenta</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              ¿Ya tienes una cuenta?{' '}
+              <Link to="/login" className="font-bold text-benmarket-600 hover:text-benmarket-700 transition-colors">
+                Inicia sesión aquí
+              </Link>
+            </p>
+          </div>
+          
+          <form className="mt-8 space-y-5 bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100" onSubmit={handleSubmit}>
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg text-sm font-medium">
+                {error}
+              </div>
+            )}
+            
+            {success && (
+              <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-r-lg text-sm font-medium">
+                {success}
+              </div>
+            )}
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Nombre Completo</label>
+                <input
+                  type="text"
+                  required
+                  className="input-field bg-slate-50 focus:bg-white transition-colors"
+                  placeholder="Tu nombre y apellido"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Correo Electrónico</label>
+                <input
+                  type="email"
+                  required
+                  className="input-field bg-slate-50 focus:bg-white transition-colors"
+                  placeholder="ejemplo@correo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Contraseña</label>
+                <input
+                  type="password"
+                  required
+                  className="input-field bg-slate-50 focus:bg-white transition-colors"
+                  placeholder="Mínimo 6 caracteres"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Confirmar Contraseña</label>
+                <input
+                  type="password"
+                  required
+                  className="input-field bg-slate-50 focus:bg-white transition-colors"
+                  placeholder="Repite tu contraseña"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="btn-primary w-full flex justify-center items-center gap-2 py-3.5 text-lg font-bold shadow-lg shadow-benmarket-200/50 hover:shadow-benmarket-300/50 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:pointer-events-none"
+              >
+                <UserPlus className="w-5 h-5" /> {loading ? 'Registrando...' : 'Registrarse'}
+              </button>
+
+              <div className="relative flex items-center justify-center my-4">
+                <div className="border-t border-slate-200 w-full"></div>
+                <span className="absolute bg-white px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">o registrarse con</span>
+              </div>
+
+              {/* Botón de Google */}
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="w-full flex justify-center items-center gap-3 py-3 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors shadow-sm font-bold text-slate-700"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.99 1 12 1 7.35 1 3.39 3.65 1.5 7.5l3.87 3a6.972 6.972 0 0 1 6.63-5.46z"
+                  />
+                  <path
+                    fill="#4285F4"
+                    d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.44h6.46a5.532 5.532 0 0 1-2.4 3.63v3.01h3.87c2.27-2.09 3.56-5.17 3.56-8.74z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.37 14.49A6.93 6.93 0 0 1 5 12c0-.87.15-1.72.43-2.52L1.5 6.47A11.97 11.97 0 0 0 0 12c0 2.01.5 3.91 1.4 5.6l3.97-3.11z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c3.24 0 5.97-1.07 7.96-2.92l-3.87-3.01c-1.07.72-2.45 1.15-4.09 1.15-3.14 0-5.8-2.11-6.75-4.96l-3.87 3A11.94 11.94 0 0 0 12 23z"
+                  />
+                </svg>
+                Google
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Sección Derecha: Mensaje de Marca */}
+      <div className="flex-1 bg-benmarket-900 text-white flex flex-col justify-center py-12 px-4 sm:px-12 lg:px-24 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+        
+        <div className="max-w-md mx-auto w-full relative z-10 text-center md:text-left space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-benmarket-800 text-benmarket-200 border border-benmarket-700 text-xs font-bold shadow-inner">
+            <Sparkles className="w-4 h-4 text-amber-400" /> Únete a Benmarket
+          </div>
+          <h3 className="text-4xl font-extrabold tracking-tight leading-tight text-white">Lleva tus compras a otro nivel</h3>
+          <p className="text-lg text-benmarket-200">
+            Regístrate para realizar pedidos rápidos a domicilio, ver tu historial de compras y acceder a las mejores ofertas en un solo lugar.
+          </p>
+          <div className="border-t border-benmarket-800 pt-6 mt-6">
+            <ul className="space-y-3 text-sm text-benmarket-300">
+              <li className="flex items-center gap-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-benmarket-400"></span>
+                Autenticación segura con correo o Google.
+              </li>
+              <li className="flex items-center gap-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-benmarket-400"></span>
+                Sincronización instantánea de perfil.
+              </li>
+              <li className="flex items-center gap-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-benmarket-400"></span>
+                Asignación de roles configurable por administración.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -8,7 +8,7 @@ export const AppProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
   const [sales, setSales] = useState(mockSales);
   const [arqueos, setArqueos] = useState(mockArqueos);
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState([]);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [deliveryPrice, setDeliveryPrice] = useState(0);
   const [themeColor, setThemeColor] = useState(null);
@@ -64,6 +64,17 @@ export const AppProvider = ({ children }) => {
         .single();
       if (!configError && configData) {
         setDeliveryPrice(Number(configData.valor) || 0);
+      }
+
+      // Fetch Users
+      const { data: userData, error: userError } = await supabase
+        .from('usuarios')
+        .select('*')
+        .order('name', { ascending: true });
+      if (userError) {
+        console.error('Error fetching users:', userError);
+      } else {
+        setUsers(userData || []);
       }
 
       // Fetch Categories
@@ -191,9 +202,60 @@ export const AppProvider = ({ children }) => {
   const updateArqueoStatus = (id, status, notes) => setArqueos(arqueos.map(a => a.id === id ? { ...a, status, notes } : a));
 
   // Funciones de Usuarios
-  const addUser = (user) => setUsers([...users, { ...user, id: Date.now() }]);
-  const updateUser = (id, updated) => setUsers(users.map(u => u.id === id ? { ...u, ...updated } : u));
-  const deleteUser = (id) => setUsers(users.filter(u => u.id !== id));
+  const addUser = async (user) => {
+    const uuid = user.id || crypto.randomUUID();
+    const { data, error } = await supabase
+      .from('usuarios')
+      .insert([{
+        id: uuid,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar || `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`
+      }])
+      .select();
+
+    if (error) {
+      console.error('Error adding user:', error);
+      throw error;
+    } else if (data && data[0]) {
+      setUsers([...users, data[0]]);
+    }
+  };
+
+  const updateUser = async (id, updated) => {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .update({
+        name: updated.name,
+        email: updated.email,
+        role: updated.role,
+        avatar: updated.avatar
+      })
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      console.error('Error updating user:', error);
+      throw error;
+    } else if (data && data[0]) {
+      setUsers(users.map(u => u.id === id ? data[0] : u));
+    }
+  };
+
+  const deleteUser = async (id) => {
+    const { error } = await supabase
+      .from('usuarios')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    } else {
+      setUsers(users.filter(u => u.id !== id));
+    }
+  };
 
   // Funciones de Theme
   const applyThemeToDocument = (colors) => {

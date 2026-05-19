@@ -13,6 +13,7 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import ProductDetails from './pages/ProductDetails';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import About from './pages/About';
 import Jobs from './pages/Jobs';
 import Shipping from './pages/Shipping';
@@ -106,6 +107,7 @@ export default function App() {
 
               {/* Ruta de Login independiente */}
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
               {/* Rutas Privadas / Staff */}
               <Route path="/dashboard" element={<DashboardLayout />}>

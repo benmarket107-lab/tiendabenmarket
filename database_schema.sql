@@ -178,3 +178,69 @@ CREATE POLICY "Permitir actualizar imágenes en banners"
 CREATE POLICY "Permitir borrar imágenes en banners"
   ON storage.objects FOR DELETE
   USING ( bucket_id = 'banners' );
+
+-- ==========================================
+-- TABLA DE USUARIOS Y AUTENTICACIÓN (PERFILES)
+-- ==========================================
+
+-- 1. Crear tabla pública de usuarios vinculada a auth.users
+CREATE TABLE IF NOT EXISTS public.usuarios (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    role TEXT NOT NULL DEFAULT 'Cliente',
+    avatar TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Habilitar RLS
+ALTER TABLE public.usuarios ENABLE ROW LEVEL SECURITY;
+
+-- 3. Políticas públicas temporales para desarrollo
+CREATE POLICY "Usuarios son legibles por todos" ON public.usuarios
+    FOR SELECT USING (true);
+
+CREATE POLICY "Usuarios son modificables por todos" ON public.usuarios
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- 4. Trigger para updated_at
+CREATE TRIGGER set_updated_at_usuarios
+    BEFORE UPDATE ON public.usuarios
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
+
+-- 5. Función Trigger para registrar automáticamente en public.usuarios al crear en auth.users
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+DECLARE
+  default_role TEXT := 'Cliente';
+BEGIN
+  -- Asignar roles especiales a las cuentas de prueba conocidas
+  IF new.email = 'admin@benmarket.com' THEN
+    default_role := 'Admin';
+  ELSIF new.email = 'cajero@benmarket.com' THEN
+    default_role := 'Cajero';
+  ELSIF new.email = 'tesoreria@benmarket.com' THEN
+    default_role := 'Tesoreria';
+  END IF;
+
+  INSERT INTO public.usuarios (id, name, email, avatar, role)
+  VALUES (
+    new.id,
+    COALESCE(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+    new.email,
+    COALESCE(new.raw_user_meta_data->>'avatar_url', 'https://i.pravatar.cc/150?img=' || floor(random() * 70)::text),
+    default_role
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 6. Crear el Trigger
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
