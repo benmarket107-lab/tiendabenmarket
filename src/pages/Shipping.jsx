@@ -73,9 +73,6 @@ export default function Shipping() {
                   <strong>Zona 3 (Más de 7 km):</strong> Gs. 20.000+ (Consultar)
                 </li>
               </ul>
-              <div className="mt-4 inline-block bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm font-bold border border-green-200">
-                ¡Envío GRATIS en compras superiores a Gs. 200.000! (Solo Zona 1 y 2)
-              </div>
             </div>
           </div>
 
@@ -87,8 +84,7 @@ export default function Shipping() {
             <div>
               <h2 className="font-headline text-xl sm:text-2xl font-bold text-on-surface mb-2">Zonas de Cobertura</h2>
               <p className="text-on-surface-variant">
-                Actualmente realizamos entregas en todo <strong>Ciudad del Este</strong>, <strong>Presidente Franco</strong>, <strong>Hernandarias</strong> y <strong>Minga Guazú</strong>. 
-                Si te encuentras fuera de estas zonas, por favor comunícate con nuestro servicio de atención al cliente antes de realizar tu pedido para coordinar la factibilidad de entrega.
+                Actualmente realizamos entregas en todo Ciudad del Este. Si te encuentras fuera de esta zona, por favor comunícate con nuestro servicio de atención al cliente antes de realizar tu pedido para coordinar la factibilidad de entrega.
               </p>
             </div>
           </div>

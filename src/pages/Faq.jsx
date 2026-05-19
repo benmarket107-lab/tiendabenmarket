@@ -25,7 +25,7 @@ export default function Faq() {
     },
     {
       question: "¿Tienen servicio de delivery?",
-      answer: "Sí, contamos con servicio de delivery a Ciudad del Este, Presidente Franco, Hernandarias y Minga Guazú. El costo varía según la zona. El envío es gratuito para compras mayores a Gs. 200.000 en zonas céntricas.",
+      answer: "Sí, contamos con servicio de delivery a Ciudad del Este. El costo varía según la zona.",
       icon: <Truck className="w-5 h-5 text-primary" />
     },
     {

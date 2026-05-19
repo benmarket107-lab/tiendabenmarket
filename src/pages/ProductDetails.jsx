@@ -146,20 +146,11 @@ export default function ProductDetails() {
                 <Truck className="w-6 h-6" />
               </div>
               <div>
-                <span className="block font-bold text-sm">Envíos a todo el país</span>
+                <span className="block font-bold text-sm">Envíos a Ciudad del Este</span>
                 <span className="text-xs text-slate-500">Llega seguro y rápido</span>
               </div>
             </div>
-            <div className="flex items-center gap-4 text-slate-700">
-              <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-600 shrink-0">
-                <RotateCcw className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="block font-bold text-sm">Devolución gratis</span>
-                <span className="text-xs text-slate-500">Tenés 30 días</span>
-              </div>
             </div>
-          </div>
 
         </div>
       </div>

@@ -11,7 +11,7 @@ export default function About() {
             Nuestra <span className="text-primary">Historia</span>
           </h1>
           <p className="text-on-surface-variant text-base sm:text-xl max-w-2xl mx-auto leading-relaxed">
-            Desde nuestros inicios, nos hemos comprometido a llevar los mejores productos frescos y locales directamente a tu mesa.
+            Desde nuestros inicios, nos hemos comprometido a ofrecer un espacio práctico y accesible, con todos los productos y servicios necesarios para facilitar el día a día de nuestros clientes.
           </p>
         </div>
 
@@ -28,10 +28,7 @@ export default function About() {
             <h2 className="font-headline text-2xl sm:text-3xl font-bold text-on-surface mb-6">¿Cómo empezamos?</h2>
             <div className="space-y-4">
               <p className="text-on-surface-variant leading-relaxed text-base sm:text-lg">
-                Benmarket nació con la visión de transformar la manera en que haces tus compras diarias. Todo comenzó en un pequeño local en Ciudad del Este, donde nos dimos cuenta de que la comunidad necesitaba un lugar de confianza que ofreciera calidad, rapidez y una atención cálida.
-              </p>
-              <p className="text-on-surface-variant leading-relaxed text-base sm:text-lg">
-                Con el paso de los años, hemos crecido gracias a la lealtad de nuestros clientes, expandiendo nuestro catálogo pero manteniendo siempre la esencia de un mercado local: conocer a quienes nos compran y ofrecerles solo lo mejor.
+                BenMarket nació en el año 2021 del sueño de una familia que entendió las necesidades reales de su comunidad. Creamos un espacio más cercano, práctico y accesible: un concepto único, más pequeño que un supermercado, pero con todo lo necesario para tus compras del mes y las gestiones del día a día. Además, ampliamos nuestro modelo de negocio ofreciendo servicios de pago de facturas, para que puedas realizar todo en un solo lugar, con comodidad y sin perder tiempo.
               </p>
             </div>
           </section>
@@ -43,16 +40,16 @@ export default function About() {
                 <div className="bg-primary/10 w-12 h-12 rounded-2xl flex items-center justify-center text-primary mb-4">
                   <Heart className="w-6 h-6" />
                 </div>
-                <h3 className="font-bold text-lg sm:text-xl mb-2 text-on-surface">Pasión por la Calidad</h3>
-                <p className="text-on-surface-variant text-sm sm:text-base font-medium">Seleccionamos cuidadosamente cada producto para asegurar que lleves a casa frescura y sabor incomparables.</p>
+                <h3 className="font-bold text-lg sm:text-xl mb-2 text-on-surface">Cercanía y Comunidad</h3>
+                <p className="text-on-surface-variant text-sm sm:text-base font-medium">Nacimos en el corazón de la comunidad y para la comunidad. Nos esforzamos por mantener un trato familiar, cálido y un espacio humano donde cada cliente se sienta bienvenido y comprendido.</p>
               </div>
               
               <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/20 shadow-sm hover:shadow-md transition-shadow">
                 <div className="bg-primary/10 w-12 h-12 rounded-2xl flex items-center justify-center text-primary mb-4">
                   <Leaf className="w-6 h-6" />
                 </div>
-                <h3 className="font-bold text-lg sm:text-xl mb-2 text-on-surface">Apoyo Local</h3>
-                <p className="text-on-surface-variant text-sm sm:text-base font-medium">Trabajamos de la mano con productores de la región para fomentar el crecimiento económico de nuestra comunidad.</p>
+                <h3 className="font-bold text-lg sm:text-xl mb-2 text-on-surface">Practicidad y Eficiencia</h3>
+                <p className="text-on-surface-variant text-sm sm:text-base font-medium">Entendemos el valor de tu tiempo. Por eso, diseñamos un concepto único que simplifica tus compras: todo lo que necesitás, sin complicaciones, sin largas filas y en un solo lugar.</p>
               </div>
               
               <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/20 shadow-sm hover:shadow-md transition-shadow">
@@ -67,8 +64,8 @@ export default function About() {
                 <div className="bg-primary/10 w-12 h-12 rounded-2xl flex items-center justify-center text-primary mb-4">
                   <Store className="w-6 h-6" />
                 </div>
-                <h3 className="font-bold text-lg sm:text-xl mb-2 text-on-surface">Siempre Cerca</h3>
-                <p className="text-on-surface-variant text-sm sm:text-base font-medium">Abiertos las 24 horas y con un sistema de envíos rápidos para que nunca te falte nada.</p>
+                <h3 className="font-bold text-lg sm:text-xl mb-2 text-on-surface">Innovación con Propósito</h3>
+                <p className="text-on-surface-variant text-sm sm:text-base font-medium">Evolucionamos constantemente para hacerte la vida más fácil. Ampliamos nuestro modelo tradicional integrando servicios clave, como el pago de facturas, para transformar el concepto de tienda de conveniencia en un verdadero centro de soluciones.</p>
               </div>
             </div>
           </section>
