@@ -45,43 +45,18 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
-// Enrutador del Dashboard según rol
-const DashboardRouter = () => {
+// Componente para decidir qué dashboard renderizar en la raíz de /dashboard según el rol
+const DashboardHome = () => {
   const { user } = useAuth();
-  
   if (!user) return <Navigate to="/login" replace />;
 
   switch (user.role) {
     case 'Admin':
-      return (
-        <Routes>
-          <Route path="/" element={<AdminDashboard />} />
-          <Route path="/theme" element={<ThemeManager />} />
-          <Route path="/delivery" element={<DeliveryManager />} />
-          <Route path="/users" element={<UsersManager />} />
-          <Route path="/products" element={<ProductsManager />} />
-          <Route path="/banners" element={<BannersManager />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      );
+      return <AdminDashboard />;
     case 'Cajero':
-      return (
-        <Routes>
-          <Route path="/" element={<SalesHistory />} />
-          <Route path="/delivery" element={<DeliveryManager />} />
-          <Route path="/products" element={<ProductsManager />} />
-          <Route path="/banners" element={<BannersManager />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      );
+      return <SalesHistory />;
     case 'Tesoreria':
-      return (
-        <Routes>
-          <Route path="/" element={<TesoreriaDashboard />} />
-          <Route path="/validations" element={<ValidarArqueos />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      );
+      return <TesoreriaDashboard />;
     default:
       return <Navigate to="/" replace />;
   }
@@ -115,7 +90,38 @@ export default function App() {
 
               {/* Rutas Privadas / Staff */}
               <Route path="/dashboard" element={<DashboardLayout />}>
-                <Route path="*" element={<DashboardRouter />} />
+                <Route index element={<DashboardHome />} />
+                <Route path="theme" element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
+                    <ThemeManager />
+                  </ProtectedRoute>
+                } />
+                <Route path="delivery" element={
+                  <ProtectedRoute allowedRoles={['Admin', 'Cajero']}>
+                    <DeliveryManager />
+                  </ProtectedRoute>
+                } />
+                <Route path="users" element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
+                    <UsersManager />
+                  </ProtectedRoute>
+                } />
+                <Route path="products" element={
+                  <ProtectedRoute allowedRoles={['Admin', 'Cajero']}>
+                    <ProductsManager />
+                  </ProtectedRoute>
+                } />
+                <Route path="banners" element={
+                  <ProtectedRoute allowedRoles={['Admin', 'Cajero']}>
+                    <BannersManager />
+                  </ProtectedRoute>
+                } />
+                <Route path="validations" element={
+                  <ProtectedRoute allowedRoles={['Tesoreria']}>
+                    <ValidarArqueos />
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Route>
             </Routes>
           </BrowserRouter>
