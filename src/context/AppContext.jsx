@@ -255,6 +255,24 @@ export const AppProvider = ({ children }) => {
   };
 
   const deleteBanner = async (id) => {
+    const banner = banners.find(b => b.id === id);
+    if (banner && banner.image) {
+      try {
+        const parts = banner.image.split('/storage/v1/object/public/banners/');
+        if (parts.length > 1) {
+          const fileName = decodeURIComponent(parts[1]).split('?')[0];
+          const { error: storageError } = await supabase.storage
+            .from('banners')
+            .remove([fileName]);
+          if (storageError) {
+            console.warn('Advertencia al eliminar la imagen del storage:', storageError);
+          }
+        }
+      } catch (storageErr) {
+        console.error('Error al intentar eliminar la imagen del storage:', storageErr);
+      }
+    }
+
     const { error } = await supabase.from('banners').delete().eq('id', id);
     if (error) {
       console.error('Error deleting banner:', error);
