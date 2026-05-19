@@ -11,7 +11,7 @@ const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER;
 export default function Checkout() {
   const { cart, total, clearCart } = useCart();
   const { user } = useAuth();
-  const { deliveryPrice } = useAppContext();
+  const { deliveryPrice, whatsappNumber } = useAppContext();
   const navigate = useNavigate();
   const [success, setSuccess] = useState(false);
 
@@ -66,7 +66,8 @@ export default function Checkout() {
     e.preventDefault();
     const message = buildWhatsAppMessage();
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+    const targetNumber = whatsappNumber || import.meta.env.VITE_WHATSAPP_NUMBER || '595981000000';
+    const whatsappUrl = `https://wa.me/${targetNumber}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
     clearCart();
     setSuccess(true);

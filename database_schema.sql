@@ -125,6 +125,11 @@ INSERT INTO public.configuracion (clave, valor, descripcion)
 VALUES ('delivery_price', '0', 'Precio del delivery en guaraníes para Ciudad del Este')
 ON CONFLICT (clave) DO NOTHING;
 
+-- Valor inicial para número de WhatsApp
+INSERT INTO public.configuracion (clave, valor, descripcion)
+VALUES ('whatsapp_number', '595981000000', 'Número de WhatsApp de destino para compras y pedidos')
+ON CONFLICT (clave) DO NOTHING;
+
 -- ==========================================
 -- TABLA DE BANNERS PUBLICITARIOS
 -- ==========================================

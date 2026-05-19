@@ -8,14 +8,14 @@ export default function Sidebar({ role }) {
     Admin: [
       { path: '/dashboard', name: 'Dashboard Global', icon: BarChart },
       { path: '/dashboard/theme', name: 'Personalizar Marca', icon: Palette },
-      { path: '/dashboard/delivery', name: 'Precio Delivery', icon: Truck },
+      { path: '/dashboard/delivery', name: 'Configuración Tienda', icon: Settings },
       { path: '/dashboard/users', name: 'Gestión Usuarios', icon: Users },
       { path: '/dashboard/products', name: 'Gestión Productos', icon: Package },
       { path: '/dashboard/banners', name: 'Gestión Banners', icon: ImageIcon },
     ],
     Cajero: [
       { path: '/dashboard', name: 'Historial de Ventas', icon: ShoppingBag },
-      { path: '/dashboard/delivery', name: 'Precio Delivery', icon: Truck },
+      { path: '/dashboard/delivery', name: 'Configuración Tienda', icon: Settings },
       { path: '/dashboard/products', name: 'Gestión Productos', icon: Package },
       { path: '/dashboard/banners', name: 'Gestión Banners', icon: ImageIcon },
     ],

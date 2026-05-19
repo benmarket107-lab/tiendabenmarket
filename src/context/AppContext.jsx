@@ -11,6 +11,7 @@ export const AppProvider = ({ children }) => {
   const [users, setUsers] = useState([]);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [deliveryPrice, setDeliveryPrice] = useState(0);
+  const [whatsappNumber, setWhatsappNumber] = useState('');
   const [themeColor, setThemeColor] = useState(null);
 
   const [categories, setCategories] = useState([]);
@@ -64,6 +65,18 @@ export const AppProvider = ({ children }) => {
         .single();
       if (!configError && configData) {
         setDeliveryPrice(Number(configData.valor) || 0);
+      }
+
+      // Fetch whatsapp number from configuracion table
+      const { data: waData, error: waError } = await supabase
+        .from('configuracion')
+        .select('valor')
+        .eq('clave', 'whatsapp_number')
+        .single();
+      if (!waError && waData) {
+        setWhatsappNumber(waData.valor || '');
+      } else {
+        setWhatsappNumber(import.meta.env.VITE_WHATSAPP_NUMBER || '595981000000');
       }
 
       // Fetch Users
@@ -195,6 +208,18 @@ export const AppProvider = ({ children }) => {
       throw error;
     }
     setDeliveryPrice(price);
+  };
+
+  const updateWhatsappNumber = async (newNumber) => {
+    const cleanNumber = String(newNumber).replace(/\D/g, '');
+    const { error } = await supabase
+      .from('configuracion')
+      .upsert({ clave: 'whatsapp_number', valor: cleanNumber, updated_at: new Date().toISOString() }, { onConflict: 'clave' });
+    if (error) {
+      console.error('Error saving whatsapp number:', error);
+      throw error;
+    }
+    setWhatsappNumber(cleanNumber);
   };
 
   // Funciones de Arqueos
@@ -355,6 +380,7 @@ export const AppProvider = ({ children }) => {
       banners, addBanner, updateBannerStatus, deleteBanner,
       globalSearchQuery, setGlobalSearchQuery,
       deliveryPrice, updateDeliveryPrice,
+      whatsappNumber, updateWhatsappNumber,
     }}>
       {children}
     </AppContext.Provider>
