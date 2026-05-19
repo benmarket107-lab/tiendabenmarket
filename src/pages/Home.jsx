@@ -98,8 +98,8 @@ export default function Home() {
     <div className="w-full bg-surface">
       {/* Hero Section / Banner Slider */}
       {activeBanners.length > 0 && (
-        <section className="mb-12 sm:mb-20 pt-0 relative">
-          <div className="relative h-[380px] sm:h-[500px] md:h-[600px] w-full mx-auto overflow-hidden bg-surface-container-lowest shadow-sm">
+        <section className="mb-8 sm:mb-16 pt-0 relative">
+          <div className="relative h-[220px] sm:h-[380px] md:h-[500px] lg:h-[600px] w-full mx-auto overflow-hidden bg-surface-container-lowest shadow-sm">
             {/* Slider Container */}
             <div 
               className={`flex w-full h-full ${isTransitioning ? 'transition-transform duration-1000 ease-in-out' : 'transition-none'}`}

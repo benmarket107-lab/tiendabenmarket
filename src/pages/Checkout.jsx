@@ -15,6 +15,7 @@ export default function Checkout() {
   const navigate = useNavigate();
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: user?.name?.split(' ')[0] || '',
@@ -164,7 +165,7 @@ export default function Checkout() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto pb-20 md:pb-0">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8 pb-4 border-b border-slate-200">
         <button
@@ -178,6 +179,58 @@ export default function Checkout() {
           <h1 className="text-2xl font-bold text-slate-900">Finalizar Pedido</h1>
           <p className="text-sm text-slate-500">Completá tus datos y te contactaremos por WhatsApp</p>
         </div>
+      </div>
+
+      {/* Mobile-only Collapsible Order Summary */}
+      <div className="mb-6 md:hidden">
+        <button
+          type="button"
+          onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
+          className="w-full flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl active:scale-98 transition-all"
+        >
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-primary" />
+            <span className="font-bold text-slate-800 text-sm">Resumen del pedido</span>
+            <span className="bg-slate-200 text-slate-700 text-xs font-bold px-2 py-0.5 rounded-full">
+              {cart.reduce((s, i) => s + i.quantity, 0)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="font-extrabold text-sm text-slate-900">{formatCurrency(total + deliveryPrice)}</span>
+            <span className="text-xs text-slate-400 font-bold">{isSummaryExpanded ? 'Ocultar' : 'Mostrar'}</span>
+          </div>
+        </button>
+
+        {isSummaryExpanded && (
+          <div className="mt-2 p-4 bg-white border border-slate-150 rounded-2xl space-y-3 max-h-60 overflow-y-auto shadow-sm animate-in slide-in-from-top duration-200">
+            {cart.map(item => (
+              <div key={item.id} className="flex items-center justify-between text-xs gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-8 h-8 rounded-lg object-contain bg-white border border-slate-100 p-0.5 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-800 line-clamp-1">{item.name}</p>
+                    <p className="text-slate-400 text-[10px]">{item.quantity} unid. × {formatCurrency(item.price)}</p>
+                  </div>
+                </div>
+                <span className="font-bold text-slate-900 shrink-0">{formatCurrency(item.price * item.quantity)}</span>
+              </div>
+            ))}
+            <div className="border-t border-slate-100 pt-3 mt-2 space-y-1.5 text-xs font-semibold text-slate-500">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>{formatCurrency(total)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>🚴 Delivery</span>
+                <span>{formatCurrency(deliveryPrice)}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -366,6 +419,26 @@ export default function Checkout() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Sticky Bottom Confirm Bar for Mobile */}
+      <div className="fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-slate-100 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] p-4 flex items-center justify-between gap-4 md:hidden">
+        <div className="flex flex-col">
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total</span>
+          <span className="text-xl font-black text-primary tracking-tight">{formatCurrency(total + deliveryPrice)}</span>
+        </div>
+        <button
+          type="submit"
+          form="checkout-form"
+          disabled={isSubmitting}
+          className="flex-1 bg-primary text-white font-extrabold text-sm py-3 px-4 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4.5 h-4.5">
+            <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+            <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
+          </svg>
+          <span>{isSubmitting ? 'Procesando...' : 'Confirmar Compra'}</span>
+        </button>
       </div>
     </div>
   );

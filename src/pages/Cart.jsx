@@ -49,19 +49,43 @@ export default function Cart() {
         </button>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20 md:pb-0">
         <div className="lg:col-span-2 space-y-4">
           {cart.map((item) => (
-            <div key={item.id} className="card p-4 flex flex-col sm:flex-row items-center gap-6 group hover:border-benmarket-200 transition-colors">
-              <div className="w-24 h-24 bg-slate-100 rounded-lg overflow-hidden shrink-0 relative">
-                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+            <div key={item.id} className="card p-3 sm:p-4 flex flex-row items-center gap-3 sm:gap-6 group hover:border-benmarket-200 transition-colors relative">
+              <div className="w-16 h-16 sm:w-24 sm:h-24 bg-slate-50 rounded-xl overflow-hidden shrink-0 relative flex items-center justify-center p-1 border border-slate-100">
+                <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply" />
               </div>
-              <div className="flex-grow text-center sm:text-left">
-                <p className="text-xs font-semibold text-benmarket-600 mb-1">{item.category}</p>
-                <h3 className="text-lg font-bold text-slate-800 line-clamp-1">{item.name}</h3>
-                <p className="text-slate-500 font-medium">{formatCurrency(item.price)} c/u</p>
+              <div className="flex-grow min-w-0 pr-6 sm:pr-0">
+                <p className="text-[10px] sm:text-xs font-bold text-primary mb-0.5 uppercase tracking-widest">{item.category}</p>
+                <h3 className="text-sm sm:text-lg font-bold text-slate-800 line-clamp-1 leading-snug">{item.name}</h3>
+                <p className="text-xs sm:text-sm text-slate-500 font-semibold mt-0.5">{formatCurrency(item.price)} c/u</p>
+                
+                {/* Mobile-only subtotal and counter */}
+                <div className="flex sm:hidden items-center justify-between mt-2">
+                  <div className="flex items-center bg-slate-50 border border-slate-200 p-0.5 rounded-lg">
+                    <button 
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      disabled={item.quantity <= 1}
+                      className="p-1 hover:bg-white rounded shadow-sm text-slate-600 disabled:opacity-40 transition-colors"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="w-6 text-center font-bold text-xs text-slate-800">{item.quantity}</span>
+                    <button 
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      disabled={item.quantity >= item.stock}
+                      className="p-1 hover:bg-white rounded shadow-sm text-slate-600 disabled:opacity-40 transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <span className="font-extrabold text-sm text-slate-900">{formatCurrency(item.price * item.quantity)}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-lg border border-slate-200">
+              
+              {/* Desktop-only Counter */}
+              <div className="hidden sm:flex items-center gap-4 bg-slate-50 p-2 rounded-lg border border-slate-200">
                 <button 
                   onClick={() => updateQuantity(item.id, item.quantity - 1)}
                   disabled={item.quantity <= 1}
@@ -78,22 +102,33 @@ export default function Cart() {
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
-              <div className="text-right sm:min-w-[120px]">
+              
+              {/* Desktop-only Subtotal */}
+              <div className="hidden sm:block text-right sm:min-w-[120px]">
                 <p className="font-bold text-lg text-slate-900 mb-2">{formatCurrency(item.price * item.quantity)}</p>
                 <button 
                   onClick={() => removeFromCart(item.id)}
-                  className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors flex items-center gap-1 text-sm font-medium mx-auto sm:ml-auto sm:mr-0"
+                  className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors flex items-center gap-1 text-sm font-medium ml-auto"
                   title="Eliminar producto"
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>
               </div>
+
+              {/* Mobile-only trash icon */}
+              <button 
+                onClick={() => removeFromCart(item.id)}
+                className="absolute top-2.5 right-2.5 text-slate-400 hover:text-red-500 p-1.5 rounded-lg transition-colors sm:hidden"
+                title="Eliminar producto"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
           ))}
         </div>
         
         <div className="lg:col-span-1">
-          <div className="card p-6 sticky top-24 bg-slate-50 border-benmarket-100">
+          <div className="card p-6 bg-slate-50 border-benmarket-100">
             <h3 className="text-xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-200">Resumen del pedido</h3>
             <div className="space-y-4 mb-6 text-slate-600 font-medium">
               <div className="flex justify-between">
@@ -114,22 +149,33 @@ export default function Cart() {
             </div>
             <button
               onClick={handleCheckout}
-              className="w-full flex justify-center items-center gap-3 py-4 rounded-xl text-white text-lg font-bold shadow-lg transition-all active:scale-95"
-              style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)' }}
+              className="w-full flex justify-center items-center gap-3 py-4 rounded-xl text-white text-lg font-bold shadow-lg transition-all active:scale-95 bg-primary hover:bg-primary/95"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
-                <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
-              </svg>
               Continuar con el pedido
+              <ArrowRight className="w-5 h-5" />
             </button>
             <div className="mt-4 text-center">
-              <Link to="/" className="text-sm font-medium text-slate-500 hover:text-benmarket-600 hover:underline">
+              <Link to="/" className="text-sm font-semibold text-slate-500 hover:text-primary hover:underline">
                 Continuar comprando
               </Link>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Sticky Bottom Checkout Footer for Mobile */}
+      <div className="fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-slate-100 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] p-4 flex items-center justify-between gap-4 md:hidden">
+        <div className="flex flex-col">
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total a pagar</span>
+          <span className="text-xl font-black text-primary tracking-tight">{formatCurrency(total + deliveryPrice)}</span>
+        </div>
+        <button
+          onClick={handleCheckout}
+          className="flex-1 bg-primary text-white font-extrabold text-sm py-3 px-4 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md shadow-primary/20"
+        >
+          <span>Finalizar Pedido</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );

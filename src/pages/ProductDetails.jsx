@@ -13,6 +13,7 @@ export default function ProductDetails() {
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
+  const [showStickyBar, setShowStickyBar] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -23,6 +24,18 @@ export default function ProductDetails() {
       setIsAdded(false);
     }
   }, [id, products]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 400) {
+        setShowStickyBar(true);
+      } else {
+        setShowStickyBar(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   if (!product) {
     return (
@@ -154,6 +167,56 @@ export default function ProductDetails() {
 
         </div>
       </div>
+
+      {/* Sticky Buy Bar for Mobile */}
+      {showStickyBar && product.stock > 0 && (
+        <div className="fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-slate-100 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] p-3.5 flex items-center justify-between gap-4 md:hidden animate-in slide-in-from-bottom duration-300">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <img 
+              src={product.image} 
+              alt={product.name} 
+              className="w-12 h-12 object-contain rounded-lg border border-slate-100 bg-white p-1 shrink-0"
+            />
+            <div className="min-w-0">
+              <p className="text-[10px] text-primary font-bold uppercase tracking-widest line-clamp-1">{product.category}</p>
+              <h4 className="font-bold text-sm text-slate-800 line-clamp-1 leading-tight">{product.name}</h4>
+              <p className="font-extrabold text-base text-primary tracking-tight mt-0.5">{formatCurrency(product.price)}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Controles de cantidad simplificados */}
+            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-0.5 h-10 w-24">
+              <button 
+                onClick={decreaseQuantity}
+                disabled={quantity <= 1}
+                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 disabled:opacity-30"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <span className="flex-1 text-center font-bold text-sm">{quantity}</span>
+              <button 
+                onClick={increaseQuantity}
+                disabled={quantity >= product.stock}
+                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 disabled:opacity-30"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+            {/* Botón comprar */}
+            <button
+              onClick={handleAddToCart}
+              className={`h-10 px-4 rounded-xl flex items-center justify-center gap-1.5 font-bold text-sm transition-all ${
+                isAdded
+                  ? 'bg-green-500 text-white'
+                  : 'bg-primary text-white active:scale-95 shadow-sm'
+              }`}
+            >
+              <ShoppingCart className="w-4 h-4" />
+              {isAdded ? '¡Listo!' : 'Agregar'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

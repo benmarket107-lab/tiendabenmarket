@@ -1,5 +1,6 @@
 import { Outlet, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import BottomNavigation from '../components/BottomNavigation';
 import logoImg from '../images/logo.png';
 import { Instagram, Facebook, Phone } from 'lucide-react'; // Phone es la mejor alternativa nativa para Whatsapp en lucide
 
@@ -7,7 +8,7 @@ export default function MainLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-surface font-body text-on-surface">
       <Navbar />
-      <main className="flex-1 mt-24 sm:mt-28">
+      <main className="flex-1 mt-24 sm:mt-28 pb-20 md:pb-0">
         <Outlet />
       </main>
         <footer className="bg-black py-6 sm:py-8 px-6 md:px-12 border-t border-white/10 text-white">
@@ -56,6 +57,7 @@ export default function MainLayout() {
           </div>
         </div>
       </footer>
+      <BottomNavigation />
     </div>
   );
 }
