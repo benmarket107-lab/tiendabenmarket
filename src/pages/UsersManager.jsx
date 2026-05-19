@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Edit, Trash2, X, Info, AlertTriangle } from 'lucide-react';
+import { Edit, Trash2, X, Info, AlertTriangle, User } from 'lucide-react';
 
 export default function UsersManager() {
   const { users, updateUser, deleteUser } = useAppContext();
@@ -83,7 +83,13 @@ export default function UsersManager() {
                 users.map(user => (
                   <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                     <td className="p-4 font-medium text-slate-900 flex items-center gap-3">
-                      <img src={user.avatar || 'https://i.pravatar.cc/150'} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+                      {user.avatar ? (
+                        <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 text-slate-400 flex items-center justify-center">
+                          <User className="w-4 h-4" />
+                        </div>
+                      )}
                       {user.name}
                     </td>
                     <td className="p-4 text-slate-600 font-mono text-xs">{user.email}</td>

@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
           name: authUser.user_metadata?.name || authUser.email.split('@')[0],
           email: authUser.email,
           role: authUser.user_metadata?.role || 'Cliente',
-          avatar: authUser.user_metadata?.avatar_url || 'https://i.pravatar.cc/150?img=11'
+          avatar: authUser.user_metadata?.avatar_url || null
         });
       }
     } catch (err) {

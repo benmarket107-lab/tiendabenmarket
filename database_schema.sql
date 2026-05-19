@@ -225,12 +225,12 @@ BEGIN
     default_role := 'Tesoreria';
   END IF;
 
-  INSERT INTO public.usuarios (id, name, email, avatar, role)
+    INSERT INTO public.usuarios (id, name, email, avatar, role)
   VALUES (
     new.id,
     COALESCE(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
     new.email,
-    COALESCE(new.raw_user_meta_data->>'avatar_url', 'https://i.pravatar.cc/150?img=' || floor(random() * 70)::text),
+    new.raw_user_meta_data->>'avatar_url',
     default_role
   )
   ON CONFLICT (id) DO NOTHING;
