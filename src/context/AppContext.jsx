@@ -236,7 +236,7 @@ export const AppProvider = ({ children }) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        avatar: user.avatar || `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`
+        avatar: user.avatar || null
       }])
       .select();
 

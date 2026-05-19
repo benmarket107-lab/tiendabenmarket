@@ -16,43 +16,77 @@ export const AuthProvider = ({ children }) => {
         .single();
       
       if (!error && data) {
-        setUser(data);
+        return data;
       } else {
         // Fallback en caso de que tarde el trigger de DB
-        setUser({
+        return {
           id: authUser.id,
-          name: authUser.user_metadata?.name || authUser.email.split('@')[0],
-          email: authUser.email,
+          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Usuario',
+          email: authUser.email || '',
           role: authUser.user_metadata?.role || 'Cliente',
           avatar: authUser.user_metadata?.avatar_url || null
-        });
+        };
       }
     } catch (err) {
       console.error("Error fetching user profile:", err);
+      return {
+        id: authUser.id,
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Usuario',
+        email: authUser.email || '',
+        role: authUser.user_metadata?.role || 'Cliente',
+        avatar: authUser.user_metadata?.avatar_url || null
+      };
     }
   };
 
   useEffect(() => {
-    // Verificar sesión inicial
+    let active = true;
+    let initialFetched = false;
+
+    const handleSession = async (session) => {
+      if (session?.user) {
+        const profile = await fetchProfile(session.user);
+        if (active) {
+          setUser(profile);
+          setLoading(false);
+        }
+      } else {
+        if (active) {
+          setUser(null);
+          setLoading(false);
+        }
+      }
+    };
+
+    // 1. Obtener la sesión inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        fetchProfile(session.user).then(() => setLoading(false));
-      } else {
-        setLoading(false);
+      if (!active) return;
+      if (!initialFetched) {
+        initialFetched = true;
+        handleSession(session);
       }
+    }).catch(err => {
+      console.error("Error obteniendo sesión inicial:", err);
+      if (active) setLoading(false);
     });
 
-    // Escuchar cambios de autenticación
+    // 2. Escuchar los cambios de estado de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        await fetchProfile(session.user);
-      } else {
-        setUser(null);
+      if (!active) return;
+
+      // Ignorar el evento inicial si getSession ya lo está procesando
+      if (event === 'INITIAL_SESSION' && initialFetched) {
+        return;
       }
-      setLoading(false);
+
+      initialFetched = true;
+      await handleSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email, password) => {

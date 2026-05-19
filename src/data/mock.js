@@ -1,9 +1,9 @@
 export const users = [
-  { id: 1, name: "Juan Cliente", email: "cliente@benmarket.com", password: "123", role: "Cliente", avatar: "https://i.pravatar.cc/150?img=11" },
-  { id: 2, name: "María Cajera", email: "cajero@benmarket.com", password: "123", role: "Cajero", avatar: "https://i.pravatar.cc/150?img=5" },
-  { id: 3, name: "Carlos Tesorero", email: "tesoreria@benmarket.com", password: "123", role: "Tesoreria", avatar: "https://i.pravatar.cc/150?img=8" },
-  { id: 4, name: "Ana Admin", email: "admin@benmarket.com", password: "123", role: "Admin", avatar: "https://i.pravatar.cc/150?img=9" },
-  { id: 5, name: "Pedro Invitado", email: "invitado@benmarket.com", password: "123", role: "Cliente", avatar: "https://i.pravatar.cc/150?img=12" },
+  { id: 1, name: "Juan Cliente", email: "cliente@benmarket.com", password: "123", role: "Cliente", avatar: null },
+  { id: 2, name: "María Cajera", email: "cajero@benmarket.com", password: "123", role: "Cajero", avatar: null },
+  { id: 3, name: "Carlos Tesorero", email: "tesoreria@benmarket.com", password: "123", role: "Tesoreria", avatar: null },
+  { id: 4, name: "Ana Admin", email: "admin@benmarket.com", password: "123", role: "Admin", avatar: null },
+  { id: 5, name: "Pedro Invitado", email: "invitado@benmarket.com", password: "123", role: "Cliente", avatar: null },
 ];
 
 export const categories = ["Bebidas", "Snacks", "Lácteos", "Limpieza", "Despensa", "Frescos"];
