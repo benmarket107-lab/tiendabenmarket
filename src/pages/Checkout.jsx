@@ -235,11 +235,7 @@ export default function Checkout() {
               </div>
               <div className="flex justify-between">
                 <span>🚴 Delivery</span>
-                {shippingMethod === 'pickup' ? (
-                  <span className="text-emerald-600 font-bold">Gratis (Retiro)</span>
-                ) : (
-                  <span>{formatCurrency(deliveryPrice)}</span>
-                )}
+                <span>{formatCurrency(finalDeliveryPrice)}</span>
               </div>
             </div>
           </div>
@@ -454,11 +450,7 @@ export default function Checkout() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-600">🚴 Delivery (Ciudad del Este)</span>
-                {shippingMethod === 'pickup' ? (
-                  <span className="text-emerald-600 font-bold">Gratis (Retiro)</span>
-                ) : (
-                  <span className="font-semibold text-slate-800">{formatCurrency(deliveryPrice)}</span>
-                )}
+                <span className="font-semibold text-slate-800">{formatCurrency(finalDeliveryPrice)}</span>
               </div>
               <div className="flex justify-between items-center pt-3 border-t border-slate-200 mt-2">
                 <span className="font-bold text-slate-900">Total</span>

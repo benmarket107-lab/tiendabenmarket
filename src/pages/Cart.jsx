@@ -168,11 +168,7 @@ export default function Cart() {
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>Envío (CDE)</span>
-                {shippingMethod === 'pickup' ? (
-                  <span className="text-emerald-600 font-bold">Gratis (Retiro)</span>
-                ) : (
-                  <span>{formatCurrency(deliveryPrice)}</span>
-                )}
+                <span>{formatCurrency(finalDeliveryPrice)}</span>
               </div>
             </div>
             <div className="border-t border-slate-200 pt-4 mb-8">

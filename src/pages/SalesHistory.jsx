@@ -488,7 +488,7 @@ export default function SalesHistory() {
                 </div>
                 <div className="flex justify-between text-xs text-slate-500">
                   <span>{selectedPedido.cliente_direccion === 'Retiro en Tienda' ? 'Retiro en Tienda' : 'Costo de Delivery'}</span>
-                  <span>{selectedPedido.cliente_direccion === 'Retiro en Tienda' ? 'Gratis' : formatCurrency(Number(selectedPedido.delivery))}</span>
+                  <span>{formatCurrency(Number(selectedPedido.delivery))}</span>
                 </div>
                 <div className="flex justify-between text-sm font-bold text-slate-950 pt-2 border-t border-slate-200">
                   <span>Total Pedido</span>
