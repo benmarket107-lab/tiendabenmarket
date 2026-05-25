@@ -274,7 +274,30 @@ export const AppProvider = ({ children }) => {
       console.error('Error adding order to Supabase:', error);
       throw error;
     }
+    
     if (data && data[0]) {
+      // Restar el stock de los productos comprados
+      try {
+        for (const item of pedido.items) {
+          const { data: prodData } = await supabase
+            .from('productos')
+            .select('cantidad_disponible')
+            .eq('codigo_producto', item.id)
+            .single();
+            
+          if (prodData) {
+            // Se resta la cantidad comprada. Permitimos que vaya a negativo ya que el local opera así.
+            const newStock = Number(prodData.cantidad_disponible) - Number(item.quantity);
+            await supabase
+              .from('productos')
+              .update({ cantidad_disponible: newStock })
+              .eq('codigo_producto', item.id);
+          }
+        }
+      } catch (stockError) {
+        console.error("Error actualizando el stock:", stockError);
+      }
+
       setPedidos(prev => [data[0], ...prev]);
       return data[0];
     }

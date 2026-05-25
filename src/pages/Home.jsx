@@ -23,7 +23,7 @@ const getCategoryIcon = (cat) => {
 
 export default function Home() {
   const { categories, rawCategories, globalSearchQuery, setGlobalSearchQuery, banners, bannersReady, fetchProductsPage } = useAppContext();
-  const [selectedCategory, setSelectedCategory] = useState('Productos Recomendados');
+  const [selectedCategory, setSelectedCategory] = useState('Todos los productos');
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -227,7 +227,7 @@ export default function Home() {
               ele.scrollLeft = ele.scrollLeftStart - walk;
             }}
           >
-            {['Productos Recomendados', ...categories].map(cat => (
+            {['Todos los productos', ...categories].map(cat => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
@@ -238,7 +238,7 @@ export default function Home() {
                 }`}
               >
                 <div className={selectedCategory === cat ? 'text-on-primary' : 'text-primary'}>
-                  {cat === 'Productos Recomendados' ? <LayoutGrid size={20} /> : getCategoryIcon(cat)}
+                  {cat === 'Todos los productos' ? <LayoutGrid size={20} /> : getCategoryIcon(cat)}
                 </div>
                 {cat}
               </button>
@@ -265,12 +265,6 @@ export default function Home() {
               </>
             )}
           </div>
-          {!globalSearchQuery && (
-            <button className="text-primary font-bold text-sm sm:text-base flex items-center gap-1.5 sm:gap-2 group bg-primary/5 hover:bg-primary/10 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full transition-colors w-full sm:w-auto justify-center">
-              Ver Todo 
-              <ArrowRight className="w-4 h-4 sm:w-[18px] sm:h-[18px] transition-transform group-hover:translate-x-1" />
-            </button>
-          )}
         </div>
         
         {products.length > 0 ? (

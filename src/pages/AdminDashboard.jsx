@@ -6,12 +6,13 @@ import { formatCurrency } from '../utils/currency';
 import { supabase } from '../supabaseClient';
 
 export default function AdminDashboard() {
-  const { sales, users, addSale, fetchProductsPage } = useAppContext();
+  const { pedidos, users, fetchProductsPage } = useAppContext();
   const [activeProducts, setActiveProducts] = useState(0);
   const [lowStockProducts, setLowStockProducts] = useState([]);
 
-  const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
-  const totalOrders = sales.length;
+  // Filtrar pedidos que no estén cancelados si se desea, o todos. Asumimos todos por ahora
+  const totalSales = pedidos.reduce((sum, p) => sum + Number(p.total), 0);
+  const totalOrders = pedidos.length;
   const lowStockCount = lowStockProducts.length;
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export default function AdminDashboard() {
         const { data, error } = await supabase
           .from('productos')
           .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url')
+          .gt('cantidad_disponible', 0)
           .lte('cantidad_disponible', 9)
           .order('cantidad_disponible', { ascending: true })
           .limit(6);
@@ -62,26 +64,6 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  const handleGenerateRandomSale = async () => {
-    try {
-      const { items } = await fetchProductsPage({ page: 1, pageSize: 25 });
-      const randomProduct = items[Math.floor(Math.random() * items.length)];
-      if (!randomProduct) return;
-
-      const qty = Math.floor(Math.random() * 3) + 1;
-      const sale = {
-        cashierId: 2,
-        cashierName: 'María Cajera',
-        total: randomProduct.price * qty,
-        date: new Date().toISOString(),
-        items: [{ productId: randomProduct.id, qty, price: randomProduct.price, name: randomProduct.name }],
-        type: Math.random() > 0.5 ? 'Online' : 'Presencial'
-      };
-      addSale(sale);
-    } catch (e) {
-    }
-  };
-
   const statCards = [
     { title: 'Ventas Totales', value: formatCurrency(totalSales), icon: DollarSign, color: 'text-green-600', bg: 'bg-green-100' },
     { title: 'Pedidos', value: totalOrders, icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-100' },
@@ -93,15 +75,6 @@ export default function AdminDashboard() {
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold text-slate-900">Dashboard Global</h1>
-        
-        {/* Botón de Pruebas Rápidas para Admin */}
-        <button 
-          onClick={handleGenerateRandomSale}
-          className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-4 py-2 rounded-lg font-bold shadow-sm transition-colors text-sm"
-          title="Generar una venta aleatoria para probar gráficos y tablas"
-        >
-          <Zap className="w-4 h-4" /> Generar Venta de Prueba
-        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -124,21 +97,21 @@ export default function AdminDashboard() {
             <h2 className="text-lg font-bold text-slate-800">Últimas Ventas</h2>
           </div>
           <div className="space-y-4">
-            {sales.length === 0 ? (
-              <div className="text-center py-8 text-slate-400">No hay ventas registradas aún.</div>
+            {pedidos.length === 0 ? (
+              <div className="text-center py-8 text-slate-400">No hay pedidos registrados aún.</div>
             ) : (
-              sales.slice(0, 5).map(sale => (
-                <div key={sale.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+              pedidos.slice(0, 5).map(pedido => (
+                <div key={pedido.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
                       <ShoppingBag className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="font-bold text-slate-900">Venta #{sale.id || Math.floor(Math.random()*1000)}</p>
-                      <p className="text-xs font-medium text-slate-500">{new Date(sale.date).toLocaleString()} • {sale.type || 'Presencial'}</p>
+                      <p className="font-bold text-slate-900">Pedido #{pedido.id.slice(0, 8)}</p>
+                      <p className="text-xs font-medium text-slate-500">{new Date(pedido.created_at).toLocaleString()} • {pedido.cliente_nombre}</p>
                     </div>
                   </div>
-                  <span className="font-black text-lg text-benmarket-600">{formatCurrency(sale.total)}</span>
+                  <span className="font-black text-lg text-benmarket-600">{formatCurrency(pedido.total)}</span>
                 </div>
               ))
             )}
