@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import ProductCard from '../components/ProductCard';
-import tiendaImg from '../images/tienda.jpg';
-import bannerImg from '../images/banner.png';
 import { 
   Search, ArrowRight, Sparkles, ShoppingBag, 
   Coffee, Carrot, Cookie, Milk, SearchX, 
@@ -24,11 +22,15 @@ const getCategoryIcon = (cat) => {
 };
 
 export default function Home() {
-  const { products, categories, globalSearchQuery, setGlobalSearchQuery, banners } = useAppContext();
+  const { categories, rawCategories, globalSearchQuery, setGlobalSearchQuery, banners, bannersReady, fetchProductsPage } = useAppContext();
   const [selectedCategory, setSelectedCategory] = useState('Productos Recomendados');
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [products, setProducts] = useState([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState(globalSearchQuery);
   const gridRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
@@ -37,19 +39,33 @@ export default function Home() {
     setCurrentPage(1);
   }, [selectedCategory, globalSearchQuery]);
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(globalSearchQuery), 250);
+    return () => clearTimeout(t);
+  }, [globalSearchQuery]);
+
   const activeBanners = banners.filter(b => b.active);
   const slides = activeBanners.length > 1 ? [...activeBanners, activeBanners[0]] : activeBanners;
 
+  useEffect(() => {
+    if (bannersReady) {
+      setIsTransitioning(false);
+      setCurrentSlide(0);
+      const t = setTimeout(() => setIsTransitioning(true), 0);
+      return () => clearTimeout(t);
+    }
+  }, [bannersReady]);
+
   // Auto-play del slider
   useEffect(() => {
-    if (!globalSearchQuery && activeBanners.length > 1) {
+    if (bannersReady && !globalSearchQuery && activeBanners.length > 1) {
       const timer = setInterval(() => {
         setIsTransitioning(true);
         setCurrentSlide((prev) => prev + 1);
       }, 5000); // Cambia cada 5 segundos
       return () => clearInterval(timer);
     }
-  }, [globalSearchQuery, activeBanners.length]);
+  }, [bannersReady, globalSearchQuery, activeBanners.length]);
 
   // Resetear al primer slide sin animación cuando llegamos al slide duplicado
   useEffect(() => {
@@ -81,23 +97,58 @@ export default function Home() {
     }
   }, [globalSearchQuery]);
 
-  const filteredProducts = products.filter(p => {
-    const matchesCategory = selectedCategory === 'Productos Recomendados' || p.category === selectedCategory;
-    const matchesSearch = p.name.toLowerCase().includes(globalSearchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const pageSize = 24;
 
-  const ITEMS_PER_PAGE = 24;
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const currentProducts = filteredProducts.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      setIsLoadingProducts(true);
+
+      try {
+        const selectedCatCode =
+          selectedCategory === 'Productos Recomendados'
+            ? null
+            : rawCategories?.find(c => c.nombre === selectedCategory)?.codigo_categoria || null;
+
+        const { items, hasMore: nextHasMore } = await fetchProductsPage({
+          page: currentPage,
+          pageSize,
+          categoryCode: selectedCatCode,
+          searchQuery: debouncedQuery,
+        });
+
+        if (cancelled) return;
+
+        setHasMore(Boolean(nextHasMore));
+        setProducts(prev => (currentPage === 1 ? items : [...prev, ...items]));
+      } catch (e) {
+        if (!cancelled) {
+          setHasMore(false);
+          setProducts(prev => (currentPage === 1 ? [] : prev));
+        }
+      } finally {
+        if (!cancelled) setIsLoadingProducts(false);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchProductsPage, rawCategories, selectedCategory, debouncedQuery, currentPage]);
 
   return (
     <div className="w-full bg-surface">
       {/* Hero Section / Banner Slider */}
-      {activeBanners.length > 0 && (
+      {!bannersReady ? (
+        <section className="mb-8 sm:mb-16 pt-0 relative">
+          <div className="relative h-[220px] sm:h-[380px] md:h-[500px] lg:h-[600px] w-full mx-auto overflow-hidden bg-surface-container-lowest shadow-sm">
+            <div className="absolute inset-0 bg-gradient-to-r from-surface-container-lowest via-surface-container-low to-surface-container-lowest animate-pulse" />
+          </div>
+        </section>
+      ) : activeBanners.length > 0 ? (
         <section className="mb-8 sm:mb-16 pt-0 relative">
           <div className="relative h-[220px] sm:h-[380px] md:h-[500px] lg:h-[600px] w-full mx-auto overflow-hidden bg-surface-container-lowest shadow-sm">
             {/* Slider Container */}
@@ -110,6 +161,8 @@ export default function Home() {
                   <img 
                     src={banner.image}
                     alt={banner.name || `Banner ${index + 1}`} 
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
                     className="absolute inset-0 w-full h-full object-cover object-top"
                   />
                   {/* Overlay oscuro opcional para que se vean mejor los indicadores, pero sin texto */}
@@ -140,7 +193,7 @@ export default function Home() {
             )}
           </div>
         </section>
-      )}
+      ) : null}
 
       {/* Categories Scroller */}
       {!globalSearchQuery && (
@@ -220,48 +273,38 @@ export default function Home() {
           )}
         </div>
         
-        {currentProducts.length > 0 ? (
+        {products.length > 0 ? (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 md:grid-cols-3 gap-x-3 gap-y-6 sm:gap-x-6 sm:gap-y-12">
-              {currentProducts.map(product => (
+              {products.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
             
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-12 sm:mt-16">
-                <button 
-                  onClick={() => {
-                    setCurrentPage(p => Math.max(1, p - 1));
-                    gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl font-bold bg-surface-container border border-outline-variant/30 text-on-surface disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-container-high transition-all active:scale-95 shadow-sm"
+            <div className="flex justify-center items-center mt-12 sm:mt-16">
+              {hasMore ? (
+                <button
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  disabled={isLoadingProducts}
+                  className="px-6 py-3 rounded-xl font-bold bg-primary text-on-primary shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all active:scale-95"
                 >
-                  Anterior
+                  {isLoadingProducts ? 'Cargando...' : 'Cargar más productos'}
                 </button>
-                <span className="font-semibold text-slate-500 text-sm sm:text-base">
-                  Página {currentPage} de {totalPages}
+              ) : (
+                <span className="text-sm sm:text-base text-on-surface-variant font-medium">
+                  {isLoadingProducts ? 'Cargando...' : 'No hay más productos para mostrar'}
                 </span>
-                <button 
-                  onClick={() => {
-                    setCurrentPage(p => Math.min(totalPages, p + 1));
-                    gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl font-bold bg-primary text-on-primary shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all active:scale-95"
-                >
-                  Siguiente
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           </>
         ) : (
           <div className="w-full py-16 sm:py-24 flex flex-col items-center justify-center text-outline bg-surface-container-lowest rounded-2xl sm:rounded-3xl border border-outline-variant/20 shadow-sm px-4 text-center">
             <div className="bg-surface-container-high p-4 sm:p-6 rounded-full mb-4 sm:mb-6">
               <SearchX className="w-8 h-8 sm:w-12 sm:h-12 text-outline-variant" strokeWidth={1.5} />
             </div>
-            <p className="text-xl sm:text-2xl font-bold text-on-surface mb-2 font-headline">No encontramos lo que buscas</p>
+            <p className="text-xl sm:text-2xl font-bold text-on-surface mb-2 font-headline">
+              {isLoadingProducts ? 'Cargando productos...' : 'No encontramos lo que buscas'}
+            </p>
             <p className="text-on-surface-variant text-sm sm:text-base font-medium max-w-md">
               Intenta con otro término de búsqueda o selecciona otra categoría para ver más productos.
             </p>

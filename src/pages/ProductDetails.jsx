@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 export default function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { products } = useAppContext();
+  const { getProductById } = useAppContext();
   const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -17,13 +17,30 @@ export default function ProductDetails() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const foundProduct = products.find(p => p.id === id);
-    if (foundProduct) {
-      setProduct(foundProduct);
-      setQuantity(1);
-      setIsAdded(false);
-    }
-  }, [id, products]);
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        const found = await getProductById(id);
+        if (cancelled) return;
+        if (found) {
+          setProduct(found);
+          setQuantity(1);
+          setIsAdded(false);
+        } else {
+          setProduct(null);
+        }
+      } catch (e) {
+        if (!cancelled) setProduct(null);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, getProductById]);
 
   useEffect(() => {
     const handleScroll = () => {

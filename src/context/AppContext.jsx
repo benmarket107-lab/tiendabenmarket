@@ -5,9 +5,15 @@ import tiendaImg from '../images/tienda.jpg';
 import bannerImg from '../images/banner.png';
 
 const AppContext = createContext();
+const DEFAULT_BANNERS = [
+  { id: 1, name: 'Banner Principal Web', image: tiendaImg, active: true },
+  { id: 2, name: 'Promo Fin de Semana', image: bannerImg, active: true },
+];
+const PRODUCT_PLACEHOLDER_IMAGE =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'><rect width='400' height='400' fill='%23f8fafc'/><text x='200' y='210' font-size='18' text-anchor='middle' fill='%2394a3b8' font-family='Arial, sans-serif'>Sin imagen</text></svg>";
 
 export const AppProvider = ({ children }) => {
-  const [products, setProducts] = useState([]);
+  const [productById, setProductById] = useState({});
   const [sales, setSales] = useState(mockSales);
   const [arqueos, setArqueos] = useState(mockArqueos);
   const [users, setUsers] = useState([]);
@@ -19,10 +25,8 @@ export const AppProvider = ({ children }) => {
 
   const [categories, setCategories] = useState([]);
   const [rawCategories, setRawCategories] = useState([]);
-  const [banners, setBanners] = useState([
-    { id: 1, name: 'Banner Principal Web', image: tiendaImg, active: true },
-    { id: 2, name: 'Promo Fin de Semana', image: bannerImg, active: true },
-  ]);
+  const [banners, setBanners] = useState([]);
+  const [bannersReady, setBannersReady] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,6 +38,7 @@ export const AppProvider = ({ children }) => {
       
       if (bannerError) {
         console.error('Error fetching banners:', bannerError);
+        setBanners(DEFAULT_BANNERS);
       } else if (bannerData && bannerData.length > 0) {
         setBanners(bannerData.map(b => ({
           id: b.id,
@@ -41,7 +46,10 @@ export const AppProvider = ({ children }) => {
           image: b.image,
           active: b.active
         })));
+      } else {
+        setBanners([]);
       }
+      setBannersReady(true);
 
       // Fetch Theme Colors
       const { data: themeData, error: themeError } = await supabase
@@ -82,6 +90,16 @@ export const AppProvider = ({ children }) => {
         setWhatsappNumber(import.meta.env.VITE_WHATSAPP_NUMBER || '595981000000');
       }
 
+      // Fetch Categories
+      const { data: catData, error: catError } = await supabase.from('categorias').select('*');
+      if (catError) {
+        console.error('Error fetching categories:', catError);
+      } else {
+        setRawCategories(catData || []);
+        const mappedCategories = (catData || []).map(c => c.nombre);
+        setCategories(mappedCategories);
+      }
+
       // Fetch Users
       const { data: userData, error: userError } = await supabase
         .from('usuarios')
@@ -103,58 +121,80 @@ export const AppProvider = ({ children }) => {
       } else {
         setPedidos(pedidosData || []);
       }
-
-      // Fetch Categories
-      const { data: catData, error: catError } = await supabase.from('categorias').select('*');
-      if (catError) {
-        console.error('Error fetching categories:', catError);
-      } else {
-        setRawCategories(catData || []);
-        const mappedCategories = (catData || []).map(c => c.nombre);
-        setCategories(mappedCategories);
-      }
-
-      // Fetch Products with category names (Paginated to bypass 1000 limit)
-      let allProducts = [];
-      let keepFetching = true;
-      let start = 0;
-      const limit = 1000;
-
-      while (keepFetching) {
-        const { data: prodData, error: prodError } = await supabase
-          .from('productos')
-          .select('*, categorias(nombre)')
-          .range(start, start + limit - 1);
-
-        if (prodError) {
-          console.error('Error fetching products:', prodError);
-          break;
-        }
-
-        if (prodData) {
-          allProducts = [...allProducts, ...prodData];
-          if (prodData.length < limit) {
-            keepFetching = false;
-          } else {
-            start += limit;
-          }
-        } else {
-          keepFetching = false;
-        }
-      }
-
-      const mappedProducts = allProducts.map(p => ({
-        id: p.codigo_producto,
-        name: p.nombre,
-        price: p.precio,
-        stock: p.cantidad_disponible,
-        image: p.foto_url || 'https://placehold.co/400x400/f8fafc/94a3b8?text=Sin+Imagen',
-        category: p.categorias?.nombre || p.codigo_categoria || 'Sin Categoría'
-      }));
-      setProducts(mappedProducts);
     };
     fetchData();
   }, []);
+
+  const fetchProductsPage = async ({
+    page = 1,
+    pageSize = 24,
+    categoryCode = null,
+    searchQuery = '',
+  } = {}) => {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+      .from('productos')
+      .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,categorias(nombre)', { count: 'estimated' })
+      .order('nombre', { ascending: true });
+
+    if (categoryCode) {
+      query = query.eq('codigo_categoria', categoryCode);
+    }
+
+    const q = String(searchQuery || '').trim();
+    if (q) {
+      query = query.ilike('nombre', `%${q}%`);
+    }
+
+    const { data, error, count } = await query.range(from, to);
+    if (error) {
+      throw error;
+    }
+
+    const items = (data || []).map(p => ({
+      id: p.codigo_producto,
+      name: p.nombre,
+      price: p.precio,
+      stock: p.cantidad_disponible,
+      image: p.foto_url || PRODUCT_PLACEHOLDER_IMAGE,
+      category: p.categorias?.nombre || 'Sin Categoría'
+    }));
+
+    const hasMore = typeof count === 'number' ? to + 1 < count : items.length === pageSize;
+
+    return { items, hasMore, total: count };
+  };
+
+  const getProductById = async (id) => {
+    if (!id) return null;
+    if (productById[id]) return productById[id];
+
+    const { data, error } = await supabase
+      .from('productos')
+      .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,categorias(nombre)')
+      .eq('codigo_producto', id)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) return null;
+
+    const mapped = {
+      id: data.codigo_producto,
+      name: data.nombre,
+      price: data.precio,
+      stock: data.cantidad_disponible,
+      image: data.foto_url || PRODUCT_PLACEHOLDER_IMAGE,
+      category: data.categorias?.nombre || 'Sin Categoría'
+    };
+
+    setProductById(prev => ({ ...prev, [id]: mapped }));
+    return mapped;
+  };
 
   // Funciones de Productos
   const addProduct = async (product) => {
@@ -174,7 +214,7 @@ export const AppProvider = ({ children }) => {
       console.error('Error adding product:', error);
       throw error;
     } else if (data) {
-      setProducts([...products, { ...product, id: newId }]);
+      setProductById(prev => ({ ...prev, [newId]: { ...product, id: newId } }));
     }
   };
 
@@ -194,7 +234,7 @@ export const AppProvider = ({ children }) => {
       console.error('Error updating product:', error);
       throw error;
     } else if (data) {
-      setProducts(products.map(p => p.id === id ? { ...p, ...updated } : p));
+      setProductById(prev => ({ ...prev, [id]: { ...(prev[id] || {}), ...updated, id } }));
     }
   };
 
@@ -204,7 +244,11 @@ export const AppProvider = ({ children }) => {
       console.error('Error deleting product:', error);
       throw error;
     } else {
-      setProducts(products.filter(p => p.id !== id));
+      setProductById(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
     }
   };
 
@@ -417,14 +461,16 @@ export const AppProvider = ({ children }) => {
 
   return (
     <AppContext.Provider value={{
-      products, addProduct, updateProduct, deleteProduct,
-      categories,
+      categories, rawCategories,
+      fetchProductsPage,
+      getProductById,
+      addProduct, updateProduct, deleteProduct,
       sales, addSale,
       pedidos, addPedido, updatePedidoEstado,
       arqueos, addArqueo, updateArqueoStatus,
       users, addUser, updateUser, deleteUser,
       themeColor, updateThemeColor,
-      banners, addBanner, updateBannerStatus, deleteBanner,
+      banners, bannersReady, addBanner, updateBannerStatus, deleteBanner,
       globalSearchQuery, setGlobalSearchQuery,
       deliveryPrice, updateDeliveryPrice,
       whatsappNumber, updateWhatsappNumber,
