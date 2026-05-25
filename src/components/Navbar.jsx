@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, LogOut, Store, ShieldCheck, Calculator, Wallet, UserCircle, Search, User, Heart, Menu, X, Home } from 'lucide-react';
+import { ShoppingCart, LogOut, Store, ShieldCheck, Calculator, Wallet, UserCircle, Search, User, Heart, Menu, X, Home, Bell, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useAppContext } from '../context/AppContext';
 import logoImg from '../images/logo.png';
+import { supabase } from '../supabaseClient';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -14,7 +15,13 @@ export default function Navbar() {
   const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+  const [pendingToast, setPendingToast] = useState(null);
+  const [isSoundMuted, setIsSoundMuted] = useState(() => {
+    return localStorage.getItem('staff_order_sound_muted') === 'true';
+  });
   const dropdownRef = useRef(null);
+  const audioRef = useRef({ ctx: null, unlocked: false });
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
@@ -42,6 +49,148 @@ export default function Navbar() {
 
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
+  const ensureAudioUnlocked = async () => {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return false;
+
+      if (!audioRef.current.ctx) {
+        audioRef.current.ctx = new AudioContextClass();
+      }
+      if (audioRef.current.ctx.state === 'suspended') {
+        await audioRef.current.ctx.resume();
+      }
+      audioRef.current.unlocked = audioRef.current.ctx.state === 'running';
+      return audioRef.current.unlocked;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const playNotificationSound = async () => {
+    if (isSoundMuted) return;
+    const ok = await ensureAudioUnlocked();
+    if (!ok) return;
+
+    const ctx = audioRef.current.ctx;
+    const now = ctx.currentTime;
+
+    const tone = (freq, start, duration) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.18, start + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + duration + 0.02);
+    };
+
+    tone(880, now + 0.0, 0.12);
+    tone(1175, now + 0.16, 0.14);
+  };
+
+  useEffect(() => {
+    if (!user || !['Admin', 'Cajero'].includes(user.role)) return;
+
+    const unlock = () => {
+      ensureAudioUnlocked();
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+
+    window.addEventListener('pointerdown', unlock, { passive: true });
+    window.addEventListener('keydown', unlock);
+
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !['Admin', 'Cajero'].includes(user.role)) {
+      setPendingOrdersCount(0);
+      setPendingToast(null);
+      return;
+    }
+
+    let toastTimer = null;
+
+    const showToast = (pedido) => {
+      setPendingToast({
+        id: pedido?.id || null,
+        created_at: pedido?.created_at || null,
+      });
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => setPendingToast(null), 6000);
+    };
+
+    const fetchPendingCount = async () => {
+      const { count, error } = await supabase
+        .from('pedidos')
+        .select('id', { count: 'estimated', head: true })
+        .eq('estado', 'Pendiente');
+      if (!error) setPendingOrdersCount(Number(count) || 0);
+    };
+
+    fetchPendingCount();
+
+    const channel = supabase
+      .channel(`realtime-pedidos-navbar-${user.role}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          if (payload.new?.estado === 'Pendiente') {
+            setPendingOrdersCount((prev) => prev + 1);
+            showToast(payload.new);
+            playNotificationSound();
+            if (Notification?.permission === 'granted') {
+              try {
+                new Notification('Nuevo pedido pendiente', {
+                  body: `Pedido #${payload.new?.id || ''} requiere atención.`,
+                });
+              } catch (e) {}
+            }
+          }
+        }
+
+        if (payload.eventType === 'UPDATE') {
+          const prevEstado = payload.old?.estado;
+          const nextEstado = payload.new?.estado;
+          if (prevEstado !== 'Pendiente' && nextEstado === 'Pendiente') {
+            setPendingOrdersCount((prev) => prev + 1);
+            showToast(payload.new);
+            playNotificationSound();
+          } else if (prevEstado === 'Pendiente' && nextEstado !== 'Pendiente') {
+            setPendingOrdersCount((prev) => Math.max(0, prev - 1));
+          }
+        }
+
+        if (payload.eventType === 'DELETE') {
+          if (payload.old?.estado === 'Pendiente') {
+            setPendingOrdersCount((prev) => Math.max(0, prev - 1));
+          }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      if (toastTimer) clearTimeout(toastTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const toggleSound = () => {
+    setIsSoundMuted(prev => {
+      const next = !prev;
+      localStorage.setItem('staff_order_sound_muted', String(next));
+      return next;
+    });
+  };
+
   const getRoleIcon = () => {
     if (!user) return null;
     switch(user.role) {
@@ -54,6 +203,33 @@ export default function Navbar() {
 
   return (
       <nav className="fixed top-0 w-full z-50 bg-black/95 backdrop-blur-xl border-b border-white/10 shadow-sm">
+        {pendingToast && user && ['Admin', 'Cajero'].includes(user.role) && (
+          <div className="bg-amber-500/15 border-b border-amber-500/25">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-amber-100 text-sm font-semibold">
+                <Bell className="w-4 h-4" />
+                <span>
+                  Nuevo pedido pendiente{pendingToast.id ? ` • #${pendingToast.id}` : ''}.
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate('/dashboard?filter=Pendiente')}
+                  className="text-xs font-bold bg-amber-400 text-amber-950 hover:bg-amber-300 px-3 py-1 rounded-lg transition-colors"
+                >
+                  Ver pedidos
+                </button>
+                <button
+                  onClick={() => setPendingToast(null)}
+                  className="p-1.5 text-amber-100/80 hover:text-amber-100 hover:bg-amber-500/20 rounded-lg transition-colors"
+                  aria-label="Cerrar aviso"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 sm:h-28 items-center gap-2 sm:gap-6">
             <Link to="/" className="flex items-center group shrink-0">
@@ -97,9 +273,42 @@ export default function Navbar() {
                 </div>
                 
                 {user.role !== 'Cliente' && (
-                  <Link to="/dashboard" className="text-sm font-semibold bg-primary text-white hover:bg-primary-container px-4 py-2.5 rounded-xl transition-colors shadow-sm">
-                    Dashboard
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    {['Admin', 'Cajero'].includes(user.role) && (
+                      <>
+                        <button
+                          onClick={toggleSound}
+                          className={`p-2.5 rounded-xl transition-all group flex items-center justify-center ${
+                            isSoundMuted ? 'text-white/60 hover:bg-white/10' : 'text-emerald-200 hover:bg-white/10'
+                          }`}
+                          title={isSoundMuted ? 'Activar sonido de pedidos' : 'Silenciar sonido de pedidos'}
+                          aria-label={isSoundMuted ? 'Activar sonido de pedidos' : 'Silenciar sonido de pedidos'}
+                        >
+                          {isSoundMuted ? (
+                            <VolumeX className="w-5 h-5 transition-transform group-hover:scale-110" />
+                          ) : (
+                            <Volume2 className="w-5 h-5 transition-transform group-hover:scale-110" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => navigate('/dashboard?filter=Pendiente')}
+                          className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center"
+                          title="Pedidos pendientes"
+                          aria-label="Pedidos pendientes"
+                        >
+                          <Bell className="w-5 h-5 transition-transform group-hover:scale-110" />
+                          {pendingOrdersCount > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-amber-400 text-amber-950 text-[10px] font-black rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center shadow-lg border-2 border-black">
+                              {pendingOrdersCount > 99 ? '99+' : pendingOrdersCount}
+                            </span>
+                          )}
+                        </button>
+                      </>
+                    )}
+                    <Link to="/dashboard" className="text-sm font-semibold bg-primary text-white hover:bg-primary-container px-4 py-2.5 rounded-xl transition-colors shadow-sm">
+                      Dashboard
+                    </Link>
+                  </div>
                 )}
                 
                 <button onClick={handleLogout} className="p-2.5 hover:bg-error hover:text-white text-white/70 rounded-xl transition-colors group" title="Cerrar sesión">
@@ -228,6 +437,46 @@ export default function Navbar() {
                     >
                       Dashboard
                     </Link>
+                  )}
+
+                  {['Admin', 'Cajero'].includes(user.role) && (
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        navigate('/dashboard?filter=Pendiente');
+                      }}
+                      className="flex items-center justify-between gap-3 text-white hover:bg-white/10 p-3 rounded-xl transition-colors font-bold"
+                    >
+                      <span className="flex items-center gap-3">
+                        <Bell className="w-5 h-5" />
+                        Pedidos pendientes
+                      </span>
+                      {pendingOrdersCount > 0 && (
+                        <span className="bg-amber-400 text-amber-950 text-[10px] font-black rounded-full min-w-6 h-6 px-2 flex items-center justify-center">
+                          {pendingOrdersCount > 99 ? '99+' : pendingOrdersCount}
+                        </span>
+                      )}
+                    </button>
+                  )}
+
+                  {['Admin', 'Cajero'].includes(user.role) && (
+                    <button
+                      onClick={() => {
+                        toggleSound();
+                        ensureAudioUnlocked();
+                      }}
+                      className="flex items-center justify-between gap-3 text-white hover:bg-white/10 p-3 rounded-xl transition-colors font-bold"
+                    >
+                      <span className="flex items-center gap-3">
+                        {isSoundMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                        Sonido de pedidos
+                      </span>
+                      <span className={`text-[10px] font-black rounded-full px-2 py-1 ${
+                        isSoundMuted ? 'bg-slate-200 text-slate-800' : 'bg-emerald-400 text-emerald-950'
+                      }`}>
+                        {isSoundMuted ? 'OFF' : 'ON'}
+                      </span>
+                    </button>
                   )}
                   
                   <button 

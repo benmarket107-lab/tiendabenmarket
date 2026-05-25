@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { formatCurrency } from '../utils/currency';
 import { 
@@ -7,6 +8,7 @@ import {
 } from 'lucide-react';
 
 export default function SalesHistory() {
+  const location = useLocation();
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('Todos'); // 'Todos' | 'Pendiente' | 'Preparando' | 'Enviado'
@@ -15,6 +17,14 @@ export default function SalesHistory() {
   const [isMuted, setIsMuted] = useState(() => {
     return localStorage.getItem('cashier_sound_muted') === 'true';
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const nextFilter = params.get('filter');
+    if (nextFilter && ['Todos', 'Pendiente', 'Preparando', 'Enviado'].includes(nextFilter)) {
+      setFilter(nextFilter);
+    }
+  }, [location.search]);
 
   // Sound Notification Function using Web Audio API
   const playAlert = () => {

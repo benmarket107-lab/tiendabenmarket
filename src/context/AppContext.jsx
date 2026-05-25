@@ -130,6 +130,7 @@ export const AppProvider = ({ children }) => {
     pageSize = 24,
     categoryCode = null,
     searchQuery = '',
+    stockFilter = 'all',
   } = {}) => {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -146,6 +147,14 @@ export const AppProvider = ({ children }) => {
     const q = String(searchQuery || '').trim();
     if (q) {
       query = query.ilike('nombre', `%${q}%`);
+    }
+
+    if (stockFilter === 'in-stock') {
+      query = query.gt('cantidad_disponible', 5);
+    } else if (stockFilter === 'low-stock') {
+      query = query.gt('cantidad_disponible', 0).lte('cantidad_disponible', 5);
+    } else if (stockFilter === 'out-of-stock') {
+      query = query.eq('cantidad_disponible', 0);
     }
 
     const { data, error, count } = await query.range(from, to);

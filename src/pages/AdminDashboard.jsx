@@ -1,29 +1,85 @@
+import { useEffect, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Users, ShoppingBag, DollarSign, TrendingUp, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '../utils/currency';
+import { supabase } from '../supabaseClient';
 
 export default function AdminDashboard() {
-  const { sales, products, users, addSale } = useAppContext();
+  const { sales, users, addSale, fetchProductsPage } = useAppContext();
+  const [activeProducts, setActiveProducts] = useState(0);
+  const [lowStockProducts, setLowStockProducts] = useState([]);
 
   const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
   const totalOrders = sales.length;
-  const activeProducts = products.filter(p => p.stock > 0).length;
+  const lowStockCount = lowStockProducts.length;
 
-  const handleGenerateRandomSale = () => {
-    const randomProduct = products[Math.floor(Math.random() * products.length)];
-    if (!randomProduct) return;
-    
-    const qty = Math.floor(Math.random() * 3) + 1;
-    const sale = {
-      cashierId: 2, // Asignar al cajero de prueba
-      cashierName: "María Cajera",
-      total: randomProduct.price * qty,
-      date: new Date().toISOString(),
-      items: [{ productId: randomProduct.id, qty, price: randomProduct.price, name: randomProduct.name }],
-      type: Math.random() > 0.5 ? 'Online' : 'Presencial'
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('productos')
+          .select('codigo_producto', { count: 'estimated', head: true })
+          .gt('cantidad_disponible', 0);
+
+        if (!cancelled && !error) {
+          setActiveProducts(Number(count) || 0);
+        }
+      } catch (e) {
+        if (!cancelled) setActiveProducts(0);
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('productos')
+          .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url')
+          .lte('cantidad_disponible', 9)
+          .order('cantidad_disponible', { ascending: true })
+          .limit(6);
+
+        if (!cancelled && !error) {
+          setLowStockProducts(
+            (data || []).map(p => ({
+              id: p.codigo_producto,
+              name: p.nombre,
+              price: p.precio,
+              stock: p.cantidad_disponible,
+              image: p.foto_url || null,
+            }))
+          );
+        }
+      } catch (e) {
+        if (!cancelled) setLowStockProducts([]);
+      }
     };
-    addSale(sale);
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleGenerateRandomSale = async () => {
+    try {
+      const { items } = await fetchProductsPage({ page: 1, pageSize: 25 });
+      const randomProduct = items[Math.floor(Math.random() * items.length)];
+      if (!randomProduct) return;
+
+      const qty = Math.floor(Math.random() * 3) + 1;
+      const sale = {
+        cashierId: 2,
+        cashierName: 'María Cajera',
+        total: randomProduct.price * qty,
+        date: new Date().toISOString(),
+        items: [{ productId: randomProduct.id, qty, price: randomProduct.price, name: randomProduct.name }],
+        type: Math.random() > 0.5 ? 'Online' : 'Presencial'
+      };
+      addSale(sale);
+    } catch (e) {
+    }
   };
 
   const statCards = [
@@ -95,13 +151,17 @@ export default function AdminDashboard() {
             <Link to="/dashboard/products" className="text-sm text-benmarket-600 font-bold hover:underline">Gestionar</Link>
           </div>
           <div className="space-y-4">
-            {products.filter(p => p.stock < 10).length === 0 ? (
+            {lowStockCount === 0 ? (
               <div className="text-center py-8 text-slate-400">Todos los productos tienen buen stock.</div>
             ) : (
-              products.filter(p => p.stock < 10).map(product => (
+              lowStockProducts.map(product => (
                 <div key={product.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
                   <div className="flex items-center gap-4">
-                    <img src={product.image} alt={product.name} className="w-12 h-12 rounded-lg object-cover shadow-sm" />
+                    {product.image ? (
+                      <img src={product.image} alt={product.name} className="w-12 h-12 rounded-lg object-cover shadow-sm" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-slate-200" />
+                    )}
                     <p className="font-bold text-slate-900">{product.name}</p>
                   </div>
                   <span className={`px-3 py-1.5 rounded-full text-xs font-black shadow-sm ${product.stock === 0 ? 'bg-red-500 text-white' : 'bg-yellow-400 text-yellow-900'}`}>

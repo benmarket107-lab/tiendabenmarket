@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../supabaseClient';
 import { compressImage } from '../utils/imageCompression';
@@ -6,7 +6,14 @@ import { Edit, Trash2, Plus, X, Upload, Download, FileJson } from 'lucide-react'
 import { formatCurrency } from '../utils/currency';
 
 export default function ProductsManager() {
-  const { products, categories, addProduct, updateProduct, deleteProduct } = useAppContext();
+  const { categories, rawCategories, fetchProductsPage, addProduct, updateProduct, deleteProduct } = useAppContext();
+  const [products, setProducts] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingList, setIsLoadingList] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -17,17 +24,53 @@ export default function ProductsManager() {
   
   const [formData, setFormData] = useState({ name: '', price: '', category: '', stock: '', image: '' });
 
-  const filteredProducts = products.filter(product => {
-    // Stock filter
-    if (stockFilter === 'in-stock' && product.stock <= 5) return false;
-    if (stockFilter === 'low-stock' && (product.stock === 0 || product.stock > 5)) return false;
-    if (stockFilter === 'out-of-stock' && product.stock > 0) return false;
-    
-    // Category filter
-    if (categoryFilter !== 'all' && product.category !== categoryFilter) return false;
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 250);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
 
-    return true;
-  });
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [stockFilter, categoryFilter, debouncedSearch]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      setIsLoadingList(true);
+      try {
+        const categoryCode =
+          categoryFilter === 'all'
+            ? null
+            : rawCategories?.find(c => c.nombre === categoryFilter)?.codigo_categoria || null;
+
+        const { items, hasMore: nextHasMore } = await fetchProductsPage({
+          page: currentPage,
+          pageSize: 25,
+          categoryCode,
+          searchQuery: debouncedSearch,
+          stockFilter,
+        });
+
+        if (cancelled) return;
+        setHasMore(Boolean(nextHasMore));
+        setProducts(prev => (currentPage === 1 ? items : [...prev, ...items]));
+      } catch (error) {
+        if (!cancelled) {
+          setProducts([]);
+          setHasMore(false);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingList(false);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchProductsPage, rawCategories, categoryFilter, stockFilter, debouncedSearch, currentPage, reloadKey]);
 
   const handleOpenModal = (product = null) => {
     setImageFile(null);
@@ -79,6 +122,7 @@ export default function ProductsManager() {
         await addProduct(formattedData);
       }
       setIsModalOpen(false);
+      setReloadKey(k => k + 1);
     } catch (error) {
       console.error('Error guardando producto:', error);
       alert(`Error al guardar: ${error.message || 'Error desconocido'}`);
@@ -99,6 +143,15 @@ export default function ProductsManager() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteProduct(id);
+      setReloadKey(k => k + 1);
+    } catch (error) {
+      alert(`Error al eliminar: ${error.message || 'Error desconocido'}`);
+    }
   };
 
   // Función para importar productos desde JSON
@@ -152,6 +205,13 @@ export default function ProductsManager() {
             <option value="out-of-stock">Sin Stock (0)</option>
           </select>
 
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar producto..."
+            className="flex-[2] md:flex-none px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-700 outline-none focus:border-primary shadow-sm w-full md:w-[260px]"
+          />
+
           <input 
             type="file" 
             accept=".json" 
@@ -194,7 +254,7 @@ export default function ProductsManager() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredProducts.map(product => (
+              {products.map(product => (
                 <tr key={product.id} className="hover:bg-slate-50 transition-colors">
                   <td className="p-4 flex items-center gap-3">
                     <img src={product.image} alt={product.name} className="w-10 h-10 rounded-lg object-cover border border-slate-200" />
@@ -215,7 +275,7 @@ export default function ProductsManager() {
                     <button onClick={() => handleOpenModal(product)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
                       <Edit className="w-4 h-4" />
                     </button>
-                    <button onClick={() => deleteProduct(product.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded">
+                    <button onClick={() => handleDelete(product.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </td>
@@ -223,6 +283,29 @@ export default function ProductsManager() {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+        <div className="text-sm text-slate-500">
+          {isLoadingList ? 'Cargando productos...' : `Mostrando ${products.length} productos`}
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1 || isLoadingList}
+            className="px-4 py-2 rounded-lg font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Anterior
+          </button>
+          <span className="text-sm font-semibold text-slate-500">Página {currentPage}</span>
+          <button
+            onClick={() => setCurrentPage(p => p + 1)}
+            disabled={!hasMore || isLoadingList}
+            className="px-4 py-2 rounded-lg font-bold bg-primary text-on-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Siguiente
+          </button>
         </div>
       </div>
 
