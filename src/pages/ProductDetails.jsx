@@ -4,12 +4,16 @@ import { useCart } from '../context/CartContext';
 import { formatCurrency } from '../utils/currency';
 import { ArrowLeft, ShoppingCart, Plus, Minus, Heart, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useFavorites } from '../context/FavoritesContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getProductById } = useAppContext();
   const { addToCart } = useCart();
+  const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
@@ -70,6 +74,7 @@ export default function ProductDetails() {
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
   };
+  const fav = isFavorite(product.id);
 
   const increaseQuantity = () => {
     if (quantity < product.stock) setQuantity(prev => prev + 1);
@@ -98,8 +103,20 @@ export default function ProductDetails() {
             alt={product.name} 
             className="w-full h-full max-w-md max-h-[400px] object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105"
           />
-          <button className="absolute top-6 right-6 h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm">
-            <Heart className="w-6 h-6" />
+          <button
+            onClick={() => {
+              if (!user) {
+                navigate('/login?redirect=/favorites');
+                return;
+              }
+              toggleFavorite(product);
+            }}
+            className={`absolute top-6 right-6 h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center transition-all shadow-sm ${
+              fav ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'
+            }`}
+            aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+          >
+            <Heart className={`w-6 h-6 ${fav ? 'fill-current' : ''}`} />
           </button>
         </div>
 

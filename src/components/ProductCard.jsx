@@ -2,10 +2,15 @@ import { useCart } from '../context/CartContext';
 import { formatCurrency } from '../utils/currency';
 import { Heart, Plus, ShoppingCart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useFavorites } from '../context/FavoritesContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const fav = isFavorite(product.id);
 
   return (
     <div 
@@ -43,11 +48,18 @@ export default function ProductCard({ product }) {
         <button 
           onClick={(e) => {
             e.stopPropagation();
-            // TODO: Toggle favorite logic here
+            if (!user) {
+              navigate('/login?redirect=/favorites');
+              return;
+            }
+            toggleFavorite(product);
           }}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 h-7 w-7 sm:h-9 sm:w-9 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-outline hover:text-primary hover:bg-white shadow-sm active:scale-90 transition-all z-10"
+          className={`absolute top-2 right-2 sm:top-3 sm:right-3 h-7 w-7 sm:h-9 sm:w-9 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm active:scale-90 transition-all z-10 ${
+            fav ? 'text-red-500 hover:bg-red-50' : 'text-outline hover:text-primary hover:bg-white'
+          }`}
+          aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
         >
-          <Heart className="w-3.5 h-3.5 sm:w-[18px] sm:h-[18px] transition-colors" />
+          <Heart className={`w-3.5 h-3.5 sm:w-[18px] sm:h-[18px] transition-colors ${fav ? 'fill-current' : ''}`} />
         </button>
       </div>
       

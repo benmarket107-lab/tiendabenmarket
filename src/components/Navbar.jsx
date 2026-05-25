@@ -1,16 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, LogOut, Store, ShieldCheck, Calculator, Wallet, UserCircle, Search, User, Heart, Menu, X, Home, Bell, Volume2, VolumeX } from 'lucide-react';
+import { ShoppingCart, LogOut, Store, ShieldCheck, Calculator, Wallet, UserCircle, Search, User, Heart, Menu, X, Home, Bell, Volume2, VolumeX, Package } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useAppContext } from '../context/AppContext';
 import logoImg from '../images/logo.png';
 import { supabase } from '../supabaseClient';
+import { useFavorites } from '../context/FavoritesContext';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { cart } = useCart();
   const { globalSearchQuery, setGlobalSearchQuery } = useAppContext();
+  const { count: favoritesCount } = useFavorites();
   const navigate = useNavigate();
   const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -258,7 +260,46 @@ export default function Navbar() {
             
             {/* Iconos Desktop */}
             <div className="hidden md:flex items-center gap-6 shrink-0">
-            {user ? (
+            {user && user.role === 'Cliente' ? (
+              <>
+                <Link to="/orders" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Mis pedidos">
+                  <Package className="w-6 h-6 transition-transform group-hover:scale-110" />
+                </Link>
+                <Link to="/favorites" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Mis Favoritos">
+                  <Heart className="w-6 h-6 transition-transform group-hover:scale-110" />
+                  {favoritesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center shadow-lg border-2 border-black">
+                      {favoritesCount > 99 ? '99+' : favoritesCount}
+                    </span>
+                  )}
+                </Link>
+                <Link to="/cart" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Carrito">
+                  <ShoppingCart className="w-6 h-6 transition-transform group-hover:scale-110" />
+                  {totalItems > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg border-2 border-black">
+                      {totalItems > 99 ? '99+' : totalItems}
+                    </span>
+                  )}
+                </Link>
+
+                <div className="flex items-center gap-5 border-l border-white/20 pl-6 ml-2">
+                  <div className="flex items-center gap-3 bg-white/5 py-1.5 px-3 rounded-full border border-white/10">
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover border-2 border-primary" />
+                    ) : (
+                      getRoleIcon()
+                    )}
+                    <div className="hidden sm:flex flex-col pr-2">
+                      <span className="text-sm font-bold leading-tight text-white">{user.name}</span>
+                      <span className="text-[10px] text-white/70 font-mono font-bold uppercase tracking-wider leading-none">{user.role}</span>
+                    </div>
+                  </div>
+                  <button onClick={handleLogout} className="p-2.5 hover:bg-error hover:text-white text-white/70 rounded-xl transition-colors group" title="Cerrar sesión">
+                    <LogOut className="w-5 h-5 group-hover:text-white" />
+                  </button>
+                </div>
+              </>
+            ) : user ? (
               <div className="flex items-center gap-5 border-l border-white/20 pl-6 ml-2">
                 <div className="flex items-center gap-3 bg-white/5 py-1.5 px-3 rounded-full border border-white/10">
                   {user.avatar ? (
@@ -316,43 +357,46 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <div className="relative" ref={dropdownRef}>
-                <button 
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center justify-center p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all shadow-sm group"
-                  aria-label="Menú de usuario"
-                >
-                  <User className="w-6 h-6 transition-transform group-hover:scale-110" />
-                </button>
-
-                {isDropdownOpen && (
-                  <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl py-2 border border-slate-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <Link 
-                      to="/login" 
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="flex items-center px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors"
-                    >
-                      Iniciar Sesión
-                    </Link>
-                    <Link 
-                      to="/register" 
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="flex items-center px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors"
-                    >
-                      Registrarme
-                    </Link>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {(!user || user.role === 'Cliente') && (
               <>
+                <div className="relative" ref={dropdownRef}>
+                  <button 
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="flex items-center justify-center p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all shadow-sm group"
+                    aria-label="Menú de usuario"
+                  >
+                    <User className="w-6 h-6 transition-transform group-hover:scale-110" />
+                  </button>
+
+                  {isDropdownOpen && (
+                    <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl py-2 border border-slate-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <Link 
+                        to="/login" 
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors"
+                      >
+                        Iniciar Sesión
+                      </Link>
+                      <Link 
+                        to="/register" 
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors"
+                      >
+                        Registrarme
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
                 <Link to="/favorites" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Mis Favoritos">
                   <Heart className="w-6 h-6 transition-transform group-hover:scale-110" />
+                  {favoritesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center shadow-lg border-2 border-black">
+                      {favoritesCount > 99 ? '99+' : favoritesCount}
+                    </span>
+                  )}
                 </Link>
                 
-                <Link to="/cart" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center">
+                <Link to="/cart" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Carrito">
                   <ShoppingCart className="w-6 h-6 transition-transform group-hover:scale-110" />
                   {totalItems > 0 && (
                     <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg border-2 border-black">
@@ -412,6 +456,17 @@ export default function Navbar() {
                 >
                   <Heart className="w-5 h-5" />
                   Mis Favoritos
+                </Link>
+              )}
+
+              {user && user.role === 'Cliente' && (
+                <Link
+                  to="/orders"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 text-white hover:bg-white/10 p-3 rounded-xl transition-colors font-medium"
+                >
+                  <Package className="w-5 h-5" />
+                  Mis Pedidos
                 </Link>
               )}
 
