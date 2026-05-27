@@ -47,9 +47,7 @@ export default function Checkout() {
     const itemLines = cart
       .map(item => {
         let line = `  • ${item.quantity}x ${item.name} (${formatCurrency(item.price)} c/u) → ${formatCurrency(item.price * item.quantity)}\n    _Cód: ${item.id}_`;
-        if (item.image && !item.image.includes('placehold.co')) {
-          line += `\n    📸 _Ver foto:_ ${item.image}`;
-        }
+        line += `\n    🔗 _Ver producto:_ ${window.location.origin}/product/${item.id}`;
         return line;
       })
       .join('\n\n');
