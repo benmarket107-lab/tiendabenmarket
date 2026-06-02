@@ -188,31 +188,40 @@ export const AppProvider = ({ children }) => {
 
   const getProductById = useCallback(async (id) => {
     if (!id) return null;
-    if (productByIdRef.current[id]) return productByIdRef.current[id];
+    
+    const decodedId = decodeURIComponent(id);
+    const keysToTry = Array.from(new Set([decodedId, id]));
 
-    const { data, error } = await supabase
-      .from('productos')
-      .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,categorias(nombre)')
-      .eq('codigo_producto', id)
-      .maybeSingle();
+    for (const key of keysToTry) {
+      if (productByIdRef.current[key]) return productByIdRef.current[key];
 
-    if (error) {
-      throw error;
+      const { data, error } = await supabase
+        .from('productos')
+        .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,categorias(nombre)')
+        .eq('codigo_producto', key)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching product by ID:', error);
+        continue;
+      }
+
+      if (data) {
+        const mapped = {
+          id: data.codigo_producto,
+          name: data.nombre,
+          price: data.precio,
+          stock: data.cantidad_disponible,
+          image: data.foto_url || PRODUCT_PLACEHOLDER_IMAGE,
+          category: data.categorias?.nombre || 'Sin Categoría'
+        };
+
+        setProductById(prev => ({ ...prev, [key]: mapped, [id]: mapped }));
+        return mapped;
+      }
     }
 
-    if (!data) return null;
-
-    const mapped = {
-      id: data.codigo_producto,
-      name: data.nombre,
-      price: data.precio,
-      stock: data.cantidad_disponible,
-      image: data.foto_url || PRODUCT_PLACEHOLDER_IMAGE,
-      category: data.categorias?.nombre || 'Sin Categoría'
-    };
-
-    setProductById(prev => ({ ...prev, [id]: mapped }));
-    return mapped;
+    return null;
   }, []);
 
   // Funciones de Productos
@@ -410,6 +419,7 @@ export const AppProvider = ({ children }) => {
 
   // Funciones de Theme
   const applyThemeToDocument = (colors) => {
+    if (typeof document === 'undefined') return;
     const root = document.documentElement;
     if (colors.primary) root.style.setProperty('--color-primary', colors.primary);
     if (colors.primaryContainer) root.style.setProperty('--color-primary-container', colors.primaryContainer);

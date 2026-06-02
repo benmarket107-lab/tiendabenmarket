@@ -1,4 +1,7 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+'use client';
+
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { Home, Search, ShoppingCart, User, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -10,8 +13,10 @@ export default function BottomNavigation() {
   const { cart, addToCart } = useCart();
   const { user } = useAuth();
   const { globalSearchQuery, setGlobalSearchQuery, products } = useAppContext();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
+  const location = { pathname };
+  const navigate = (path) => router.push(path);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
 
@@ -59,7 +64,7 @@ export default function BottomNavigation() {
       >
         {/* Inicio */}
         <Link 
-          to="/" 
+          href="/" 
           onClick={handleSearchClose}
           className={`flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-95 ${
             isHome && !isSearchOpen ? 'text-primary' : 'text-slate-400 hover:text-slate-600'
@@ -82,7 +87,7 @@ export default function BottomNavigation() {
 
         {/* Carrito */}
         <Link 
-          to="/cart" 
+          href="/cart" 
           onClick={handleSearchClose}
           className={`flex flex-col items-center justify-center flex-1 h-full relative transition-all active:scale-95 ${
             isCart ? 'text-primary' : 'text-slate-400 hover:text-slate-600'
@@ -101,7 +106,7 @@ export default function BottomNavigation() {
 
         {/* Mi Cuenta */}
         <Link 
-          to={getAccountLink()} 
+          href={getAccountLink()} 
           onClick={handleSearchClose}
           className={`flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-95 ${
             isAccount ? 'text-primary' : 'text-slate-400 hover:text-slate-600'

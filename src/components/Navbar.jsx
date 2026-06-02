@@ -1,5 +1,8 @@
+'use client';
+
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { ShoppingCart, LogOut, Store, ShieldCheck, Calculator, Wallet, UserCircle, Search, User, Heart, Menu, X, Home, Bell, Volume2, VolumeX, Package } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -13,8 +16,11 @@ export default function Navbar() {
   const { cart } = useCart();
   const { globalSearchQuery, setGlobalSearchQuery } = useAppContext();
   const { count: favoritesCount } = useFavorites();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
+  const location = { pathname };
+  const navigate = (path) => router.push(path);
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
@@ -226,9 +232,9 @@ export default function Navbar() {
         )}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 sm:h-28 items-center gap-2 sm:gap-6">
-            <Link to="/" className="flex items-center group shrink-0">
+            <Link href="/" className="flex items-center group shrink-0">
               <img 
-                src={logoImg} 
+                src={logoImg.src || logoImg} 
                 alt="Logo Benmarket" 
                 className="h-12 sm:h-24 w-auto sm:w-[280px] object-contain object-left group-hover:scale-105 transition-transform"
               />
@@ -254,10 +260,10 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-6 shrink-0">
             {user && user.role === 'Cliente' ? (
               <>
-                <Link to="/orders" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Mis pedidos">
+                <Link href="/orders" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Mis pedidos">
                   <Package className="w-6 h-6 transition-transform group-hover:scale-110" />
                 </Link>
-                <Link to="/favorites" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Mis Favoritos">
+                <Link href="/favorites" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Mis Favoritos">
                   <Heart className="w-6 h-6 transition-transform group-hover:scale-110" />
                   {favoritesCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center shadow-lg border-2 border-black">
@@ -265,7 +271,7 @@ export default function Navbar() {
                     </span>
                   )}
                 </Link>
-                <Link to="/cart" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Carrito">
+                <Link href="/cart" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Carrito">
                   <ShoppingCart className="w-6 h-6 transition-transform group-hover:scale-110" />
                   {totalItems > 0 && (
                     <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg border-2 border-black">
@@ -338,7 +344,7 @@ export default function Navbar() {
                         </button>
                       </>
                     )}
-                    <Link to="/dashboard" className="text-sm font-semibold bg-primary text-white hover:bg-primary-container px-4 py-2.5 rounded-xl transition-colors shadow-sm">
+                    <Link href="/dashboard" className="text-sm font-semibold bg-primary text-white hover:bg-primary-container px-4 py-2.5 rounded-xl transition-colors shadow-sm">
                       Dashboard
                     </Link>
                   </div>
@@ -362,14 +368,14 @@ export default function Navbar() {
                   {isDropdownOpen && (
                     <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl py-2 border border-slate-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                       <Link 
-                        to="/login" 
+                        href="/login" 
                         onClick={() => setIsDropdownOpen(false)}
                         className="flex items-center px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors"
                       >
                         Iniciar Sesión
                       </Link>
                       <Link 
-                        to="/register" 
+                        href="/register" 
                         onClick={() => setIsDropdownOpen(false)}
                         className="flex items-center px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors"
                       >
@@ -379,7 +385,7 @@ export default function Navbar() {
                   )}
                 </div>
 
-                <Link to="/favorites" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Mis Favoritos">
+                <Link href="/favorites" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Mis Favoritos">
                   <Heart className="w-6 h-6 transition-transform group-hover:scale-110" />
                   {favoritesCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center shadow-lg border-2 border-black">
@@ -388,7 +394,7 @@ export default function Navbar() {
                   )}
                 </Link>
                 
-                <Link to="/cart" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Carrito">
+                <Link href="/cart" className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center" title="Carrito">
                   <ShoppingCart className="w-6 h-6 transition-transform group-hover:scale-110" />
                   {totalItems > 0 && (
                     <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg border-2 border-black">
@@ -402,7 +408,7 @@ export default function Navbar() {
 
           {/* Botón de Menú Hamburguesa (Mobile) */}
           <div className="flex md:hidden items-center gap-2">
-            <Link to="/cart" className="relative p-2 hover:bg-white/10 rounded-xl transition-all text-white flex items-center justify-center">
+            <Link href="/cart" className="relative p-2 hover:bg-white/10 rounded-xl transition-all text-white flex items-center justify-center">
               <ShoppingCart className="w-6 h-6" />
               {totalItems > 0 && (
                 <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg border-2 border-black">
@@ -442,7 +448,7 @@ export default function Navbar() {
             <div className="flex flex-col gap-2">
               {(!user || user.role === 'Cliente') && (
                 <Link 
-                  to="/favorites" 
+                  href="/favorites" 
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-3 text-white hover:bg-white/10 p-3 rounded-xl transition-colors font-medium"
                 >
@@ -453,7 +459,7 @@ export default function Navbar() {
 
               {user && user.role === 'Cliente' && (
                 <Link
-                  to="/orders"
+                  href="/orders"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-3 text-white hover:bg-white/10 p-3 rounded-xl transition-colors font-medium"
                 >
@@ -478,7 +484,7 @@ export default function Navbar() {
                   
                   {user.role !== 'Cliente' && (
                     <Link 
-                      to="/dashboard" 
+                      href="/dashboard" 
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="flex items-center gap-3 bg-primary text-white p-3 rounded-xl font-bold hover:bg-primary-container transition-colors"
                     >
@@ -537,14 +543,14 @@ export default function Navbar() {
               ) : (
                 <div className="grid grid-cols-2 gap-3 mt-2">
                   <Link 
-                    to="/login" 
+                    href="/login" 
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex justify-center items-center bg-white/10 text-white p-3 rounded-xl font-bold hover:bg-white/20 transition-colors"
                   >
                     Iniciar Sesión
                   </Link>
                   <Link 
-                    to="/register" 
+                    href="/register" 
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex justify-center items-center bg-primary text-white p-3 rounded-xl font-bold hover:bg-primary-container transition-colors"
                   >

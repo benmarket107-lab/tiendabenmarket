@@ -1,8 +1,11 @@
-import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, Users, DollarSign, Calculator, Settings, BarChart, Package, Truck, Image as ImageIcon, Palette } from 'lucide-react';
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { ShoppingBag, Users, Settings, BarChart, Package, Image as ImageIcon, Palette } from 'lucide-react';
 
 export default function Sidebar({ role }) {
-  const location = useLocation();
+  const pathname = usePathname();
 
   const menuItems = {
     Admin: [
@@ -32,15 +35,15 @@ export default function Sidebar({ role }) {
       <nav className="p-4 space-y-2 mt-4">
         {links.map((link) => {
           const Icon = link.icon;
-          const isActive = location.pathname === link.path;
+          const isActive = pathname === link.path;
           return (
             <Link
               key={link.path}
-              to={link.path}
+              href={link.path}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${
                 isActive 
-                  ? 'bg-benmarket-50 text-benmarket-700 border-l-4 border-benmarket-600' 
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-benmarket-600'
+                  ? 'bg-primary/10 text-primary border-l-4 border-primary' 
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-primary'
               }`}
             >
               <Icon className="w-5 h-5" />

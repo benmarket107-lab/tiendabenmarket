@@ -1,16 +1,19 @@
+'use client';
+
 import { useCart } from '../context/CartContext';
 import { formatCurrency } from '../utils/currency';
 import { Heart, Plus, ShoppingCart } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useFavorites } from '../context/FavoritesContext';
 import { useAuth } from '../context/AuthContext';
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const fav = isFavorite(product.id);
+  const navigate = (path) => router.push(path);
 
   return (
     <div 
