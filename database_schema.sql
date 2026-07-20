@@ -384,3 +384,7 @@ CREATE INDEX IF NOT EXISTS idx_productos_categoria ON public.productos(codigo_ca
 CREATE INDEX IF NOT EXISTS idx_pedidos_user_id ON public.pedidos(user_id);
 CREATE INDEX IF NOT EXISTS idx_pedidos_created_at ON public.pedidos(created_at DESC);
 
+-- Habilitar extensión para búsqueda rápida de texto
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX IF NOT EXISTS idx_productos_nombre_trgm ON public.productos USING gin (nombre gin_trgm_ops);
+

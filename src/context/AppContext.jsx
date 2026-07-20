@@ -105,30 +105,38 @@ export const AppProvider = ({ children }) => {
         setCategories(mappedCategories);
       }
 
-      // Solo cargar datos pesados si hay sesión activa (Admin/Cajero los necesitan)
+      // Solo cargar datos pesados si hay sesión activa y el rol es Admin, Cajero o Tesoreria
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) {
-        // Fetch Users (solo usuarios autenticados los necesitan)
-        const { data: userData, error: userError } = await supabase
+        const { data: currentUserData } = await supabase
           .from('usuarios')
-          .select('*')
-          .order('name', { ascending: true });
-        if (userError) {
-          console.error('Error fetching users:', userError);
-        } else {
-          setUsers(userData || []);
-        }
+          .select('role')
+          .eq('id', session.user.id)
+          .maybeSingle();
 
-        // Fetch Pedidos — limitado a 200 para no saturar la RAM del cliente
-        const { data: pedidosData, error: pedidosError } = await supabase
-          .from('pedidos')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(200);
-        if (pedidosError) {
-          console.error('Error fetching pedidos:', pedidosError);
-        } else {
-          setPedidos(pedidosData || []);
+        if (currentUserData && ['Admin', 'Cajero', 'Tesoreria'].includes(currentUserData.role)) {
+          // Fetch Users (solo usuarios autorizados los necesitan)
+          const { data: userData, error: userError } = await supabase
+            .from('usuarios')
+            .select('*')
+            .order('name', { ascending: true });
+          if (userError) {
+            console.error('Error fetching users:', userError);
+          } else {
+            setUsers(userData || []);
+          }
+
+          // Fetch Pedidos — limitado a 200 para no saturar la RAM del cliente
+          const { data: pedidosData, error: pedidosError } = await supabase
+            .from('pedidos')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(200);
+          if (pedidosError) {
+            console.error('Error fetching pedidos:', pedidosError);
+          } else {
+            setPedidos(pedidosData || []);
+          }
         }
       }
     };

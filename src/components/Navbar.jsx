@@ -251,6 +251,7 @@ export default function Navbar() {
                   type="text"
                   value={globalSearchQuery}
                   onChange={handleSearchChange}
+                  aria-label="Buscar productos"
                 />
               </div>
             )}
@@ -418,6 +419,7 @@ export default function Navbar() {
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 text-white hover:bg-white/10 rounded-xl transition-colors"
+              aria-label={isMobileMenuOpen ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
             >
               {isMobileMenuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
             </button>
@@ -440,6 +442,7 @@ export default function Navbar() {
                   onChange={(e) => {
                     handleSearchChange(e);
                   }}
+                  aria-label="Buscar productos"
                 />
               </div>
             )}
