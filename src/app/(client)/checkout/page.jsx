@@ -66,7 +66,11 @@ export default function CheckoutPage() {
       itemLines,
       '',
       `🛋️ *Subtotal:* ${formatCurrency(total)}`,
-      isPickup ? `🏪 *Retiro en Tienda:* ${formatCurrency(0)}` : `🚴 *Delivery (Cde):* ${formatCurrency(deliveryPrice)}`,
+      isPickup 
+        ? `🏪 *Retiro en Tienda:* ${formatCurrency(0)}` 
+        : (deliveryPrice === 0 
+            ? `🚴 *Envio (CDE):* El precio del delivery será enviado al confirmar el pedido.` 
+            : `🚴 *Delivery (Cde):* ${formatCurrency(deliveryPrice)}`),
       `💰 *TOTAL: ${formatCurrency(currentGrandTotal)}*`,
       '',
       '_Pedido generado desde BenMarket Online_',
@@ -206,10 +210,22 @@ export default function CheckoutPage() {
                 <span>Subtotal</span>
                 <span>{formatCurrency(total)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>🚴 Delivery</span>
-                <span>{formatCurrency(finalDeliveryPrice)}</span>
-              </div>
+              {shippingMethod === 'delivery' && deliveryPrice === 0 ? (
+                <div className="flex flex-col gap-0.5 mt-1 border-t border-dashed border-slate-100 pt-1.5">
+                  <div className="flex justify-between">
+                    <span>🚴 Envio (CDE)</span>
+                    <span className="text-amber-600 font-bold">A confirmar</span>
+                  </div>
+                  <p className="text-[10px] text-amber-600 font-normal leading-tight text-right">
+                    El precio del delivery será enviado al confirmar el pedido.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex justify-between">
+                  <span>{shippingMethod === 'pickup' ? '🏪 Retiro en Tienda' : '🚴 Delivery'}</span>
+                  <span>{formatCurrency(finalDeliveryPrice)}</span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -426,10 +442,24 @@ export default function CheckoutPage() {
                 <span>Subtotal ({cart.reduce((s, i) => s + i.quantity, 0)} artículos)</span>
                 <span>{formatCurrency(total)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">🚴 Delivery (Ciudad del Este)</span>
-                <span className="font-semibold text-slate-800">{formatCurrency(finalDeliveryPrice)}</span>
-              </div>
+              {shippingMethod === 'delivery' && deliveryPrice === 0 ? (
+                <div className="flex flex-col gap-0.5 mt-1 border-t border-dashed border-slate-200 pt-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">🚴 Envio (CDE)</span>
+                    <span className="font-semibold text-amber-600">A confirmar</span>
+                  </div>
+                  <p className="text-xs text-amber-600 font-normal leading-normal text-right">
+                    El precio del delivery será enviado al confirmar el pedido.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">
+                    {shippingMethod === 'pickup' ? '🏪 Retiro en Tienda' : '🚴 Delivery (Ciudad del Este)'}
+                  </span>
+                  <span className="font-semibold text-slate-800">{formatCurrency(finalDeliveryPrice)}</span>
+                </div>
+              )}
               <div className="flex justify-between items-center pt-3 border-t border-slate-200 mt-2">
                 <span className="font-bold text-slate-900">Total</span>
                 <span className="text-2xl font-black text-slate-600">{formatCurrency(grandTotal)}</span>
