@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { Sparkles, CheckCircle2 } from 'lucide-react';
-import logoImg from '../images/logo_new.webp';
 import useSEO from '../utils/useSEO';
 
 export default function Bienvenida() {
@@ -18,7 +17,7 @@ export default function Bienvenida() {
 
       <div className="max-w-md w-full space-y-8 relative z-10 text-center">
         <div className="mx-auto mb-6 flex justify-center">
-          <img src={logoImg} alt="Logo Benmarket" className="h-20 w-auto object-contain drop-shadow-md" />
+          <img src="/logo_new.webp" alt="Logo Benmarket" className="h-20 w-auto object-contain drop-shadow-md" />
         </div>
         
         <div className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 space-y-6">

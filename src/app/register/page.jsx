@@ -5,7 +5,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { UserPlus, Eye, EyeOff } from 'lucide-react';
-import logoImg from '../../images/logo_new.webp';
 
 export default function RegisterPage() {
   const [nombre, setNombre] = useState('');
@@ -83,7 +82,7 @@ export default function RegisterPage() {
         <div className="text-center">
           <div className="mx-auto mb-6 flex justify-center">
             <Link href="/" className="hover:opacity-80 transition-opacity">
-              <img src={logoImg.src || logoImg} alt="Logo Benmarket" className="h-20 w-auto object-contain drop-shadow-md" />
+              <img src="/logo_new.webp" alt="Logo Benmarket" className="h-20 w-auto object-contain drop-shadow-md" />
             </Link>
           </div>
           <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">Crear Cuenta</h2>

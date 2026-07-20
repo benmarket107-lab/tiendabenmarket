@@ -1,6 +1,5 @@
 import Navbar from '../../components/Navbar';
 import BottomNavigation from '../../components/BottomNavigation';
-import logoImg from '../../images/logo_new.webp';
 import { Instagram, Facebook, Phone } from 'lucide-react';
 import Link from 'next/link';
 
@@ -11,11 +10,11 @@ export default function ClientLayout({ children }) {
       <main className="flex-1 mt-24 sm:mt-28 pb-20 md:pb-0">
         {children}
       </main>
-      <footer className="bg-black py-6 sm:py-8 px-6 md:px-12 border-t border-white/10 text-white">
+      <footer className="bg-[rgb(47,47,47)] py-6 sm:py-8 px-6 md:px-12 border-t border-white/10 text-white">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-8 text-center sm:text-left">
           <div className="col-span-1 sm:col-span-2 md:col-span-1 flex flex-col items-center sm:items-start">
             <img 
-              src={logoImg.src || logoImg} 
+              src="/logo_new.webp" 
               alt="Logo Benmarket" 
               className="h-12 w-auto object-contain object-center sm:object-left mb-3 sm:mb-3"
             />

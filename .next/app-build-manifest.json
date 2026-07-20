@@ -21,16 +21,6 @@
       "static/chunks/main-app.js",
       "static/chunks/app/(client)/product/[id]/page.js"
     ],
-    "/(client)/cart/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(client)/cart/page.js"
-    ],
-    "/(client)/checkout/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(client)/checkout/page.js"
-    ],
     "/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",

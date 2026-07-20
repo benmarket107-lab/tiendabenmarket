@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
-import logoImg from '../images/logo_new.webp';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -58,7 +57,7 @@ export default function Login() {
         <div className="text-center">
           <div className="mx-auto mb-8 flex justify-center">
             <Link to="/" className="hover:opacity-80 transition-opacity">
-              <img src={logoImg} alt="Logo Benmarket" className="h-20 w-auto object-contain drop-shadow-md" />
+              <img src="/logo_new.webp" alt="Logo Benmarket" className="h-20 w-auto object-contain drop-shadow-md" />
             </Link>
           </div>
           <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">Iniciar Sesión</h2>

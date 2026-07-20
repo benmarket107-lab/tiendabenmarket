@@ -7,7 +7,6 @@ import { ShoppingCart, LogOut, Store, ShieldCheck, Calculator, Wallet, UserCircl
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useAppContext } from '../context/AppContext';
-import logoImg from '../images/logo_new.webp';
 import { supabase } from '../supabaseClient';
 import { useFavorites } from '../context/FavoritesContext';
 
@@ -202,7 +201,7 @@ export default function Navbar() {
   };
 
   return (
-      <nav className="fixed top-0 w-full z-50 bg-black/95 backdrop-blur-xl border-b border-white/10 shadow-sm">
+      <nav className="fixed top-0 w-full z-50 bg-[rgb(47,47,47)] backdrop-blur-xl border-b border-white/10 shadow-sm">
         {pendingToast && user && ['Admin', 'Cajero'].includes(user.role) && (
           <div className="bg-amber-500/15 border-b border-amber-500/25">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-3">
@@ -233,8 +232,8 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 sm:h-28 items-center gap-2 sm:gap-6">
             <Link href="/" className="flex items-center group shrink-0">
-              <img 
-                src={logoImg.src || logoImg} 
+                <img 
+                  src="/logo_new.webp" 
                 alt="Logo Benmarket" 
                 className="h-12 sm:h-24 w-auto sm:w-[280px] object-contain object-left group-hover:scale-105 transition-transform"
               />
