@@ -83,7 +83,7 @@ export default function ProductsManager() {
       });
     } else {
       setEditingProduct(null);
-      setFormData({ name: '', price: '', category: categories.length > 0 ? categories[0] : '', stock: '', image: 'https://placehold.co/200x200/ef4444/white?text=Nuevo', discount: 0 });
+      setFormData({ name: '', price: '', category: categories.length > 0 ? categories[0] : '', stock: '', image: 'https://placehold.co/200x200/ef4444/white?text=Nuevo', discount: 0, unit: '' });
     }
     setIsModalOpen(true);
   };
@@ -263,7 +263,10 @@ export default function ProductsManager() {
                 <tr key={product.id} className="hover:bg-slate-50 transition-colors">
                   <td className="p-4 flex items-center gap-3">
                     <img src={product.image} alt={product.name} className="w-10 h-10 rounded-lg object-cover border border-slate-200" />
-                    <span className="font-medium text-slate-900">{product.name}</span>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-slate-900">{product.name}</span>
+                      {product.unit && <span className="text-xs text-slate-400">Unidad: {product.unit}</span>}
+                    </div>
                   </td>
                   <td className="p-4 text-slate-600">{product.category}</td>
                   <td className="p-4 text-right">
@@ -362,11 +365,17 @@ export default function ProductsManager() {
                   <input required type="number" min="0" className="input-field" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
-                <select className="input-field" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
-                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
+                  <select className="input-field" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Unidad de Medida</label>
+                  <input type="text" className="input-field" placeholder="Ej: kg, litro, unidad" value={formData.unit || ''} onChange={e => setFormData({...formData, unit: e.target.value})} />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Imagen del Producto</label>

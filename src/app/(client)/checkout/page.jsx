@@ -45,7 +45,7 @@ export default function CheckoutPage() {
 
     const itemLines = cart
       .map(item => {
-        let line = `  • ${item.quantity}x ${item.name} (${formatCurrency(item.price)} c/u) → ${formatCurrency(item.price * item.quantity)}\n    _Cód: ${item.id}_`;
+        let line = `  • ${item.quantity}x ${item.name}${item.unit ? ` (${item.unit})` : ''} (${formatCurrency(item.price)} c/u) → ${formatCurrency(item.price * item.quantity)}\n    _Cód: ${item.id}_`;
         if (typeof window !== 'undefined') {
           line += `\n    🔗 _Ver producto:_ ${window.location.origin}/product/${encodeURIComponent(item.id)}`;
         }

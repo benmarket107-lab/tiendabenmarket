@@ -73,7 +73,10 @@ export default function ProductCard({ product }) {
       
       <div className="flex flex-col flex-grow px-0.5 sm:px-1">
         <p className="text-[9px] sm:text-xs text-primary font-bold mb-1 sm:mb-1.5 uppercase tracking-widest">{product.category}</p>
-        <h3 className="text-sm sm:text-lg font-bold text-on-surface leading-tight sm:leading-snug mb-2 sm:mb-3 font-headline line-clamp-2 group-hover:text-primary transition-colors">{product.name}</h3>
+        <h3 className="text-sm sm:text-lg font-bold text-on-surface leading-tight sm:leading-snug mb-2 sm:mb-3 font-headline line-clamp-2 group-hover:text-primary transition-colors">
+          {product.name}
+          {product.unit && <span className="text-[10px] sm:text-xs text-on-surface-variant font-normal block mt-0.5">({product.unit})</span>}
+        </h3>
         
         <div className="mt-auto flex items-center justify-between pt-2 border-t border-outline-variant/20">
           <div className="flex flex-col">

@@ -155,7 +155,7 @@ export const AppProvider = ({ children }) => {
 
     let query = supabase
       .from('productos')
-      .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,categorias(nombre)', { count: 'estimated' })
+      .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,categorias(nombre)', { count: 'estimated' })
       .order('nombre', { ascending: true });
 
     if (categoryCode) {
@@ -192,7 +192,8 @@ export const AppProvider = ({ children }) => {
         discount: desc,
         stock: p.cantidad_disponible,
         image: p.foto_url || PRODUCT_PLACEHOLDER_IMAGE,
-        category: p.categorias?.nombre || 'Sin Categoría'
+        category: p.categorias?.nombre || 'Sin Categoría',
+        unit: p.unidad || ''
       };
     });
 
@@ -216,7 +217,7 @@ export const AppProvider = ({ children }) => {
     for (const key of keysToTry) {
       const { data, error } = await supabase
         .from('productos')
-        .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,categorias(nombre)')
+        .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,categorias(nombre)')
         .eq('codigo_producto', key)
         .maybeSingle();
 
@@ -237,7 +238,8 @@ export const AppProvider = ({ children }) => {
           discount: desc,
           stock: data.cantidad_disponible,
           image: data.foto_url || PRODUCT_PLACEHOLDER_IMAGE,
-          category: data.categorias?.nombre || 'Sin Categoría'
+          category: data.categorias?.nombre || 'Sin Categoría',
+          unit: data.unidad || ''
         };
 
         setProductById(prev => ({ ...prev, [key]: mapped, [id]: mapped }));
@@ -259,7 +261,8 @@ export const AppProvider = ({ children }) => {
       cantidad_disponible: product.stock,
       foto_url: product.image,
       descuento: product.discount || 0,
-      codigo_categoria: cat ? cat.codigo_categoria : null
+      codigo_categoria: cat ? cat.codigo_categoria : null,
+      unidad: product.unit || null
     };
     
     const { data, error } = await supabase.from('productos').insert([dbProduct]).select();
@@ -275,7 +278,8 @@ export const AppProvider = ({ children }) => {
         id: newId,
         originalPrice: basePrice,
         price: activePrice,
-        discount: desc
+        discount: desc,
+        unit: product.unit || ''
       };
       setProductById(prev => ({ ...prev, [newId]: mapped }));
     }
@@ -288,6 +292,7 @@ export const AppProvider = ({ children }) => {
     if (updated.stock !== undefined) dbProduct.cantidad_disponible = updated.stock;
     if (updated.image !== undefined) dbProduct.foto_url = updated.image;
     if (updated.discount !== undefined) dbProduct.descuento = updated.discount;
+    if (updated.unit !== undefined) dbProduct.unidad = updated.unit;
     if (updated.category !== undefined) {
       const cat = rawCategories.find(c => c.nombre === updated.category);
       dbProduct.codigo_categoria = cat ? cat.codigo_categoria : null;

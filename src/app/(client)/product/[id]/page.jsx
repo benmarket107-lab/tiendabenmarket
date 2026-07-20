@@ -137,7 +137,10 @@ export default function ProductDetailsPage() {
         {/* Columna Derecha: Detalles del producto */}
         <div className="flex flex-col justify-center">
           <span className="text-xs sm:text-sm font-bold text-primary uppercase tracking-widest mb-3 bg-primary/10 w-fit px-3 py-1 rounded-full">{product.category}</span>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 leading-tight mb-4">{product.name}</h1>
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 leading-tight mb-4">
+            {product.name}
+            {product.unit && <span className="text-lg sm:text-xl font-bold text-slate-500 block mt-2">({product.unit})</span>}
+          </h1>
           <div className="flex flex-wrap items-baseline gap-3 mb-6">
             <span className="text-4xl font-black text-slate-900">{formatCurrency(product.price)}</span>
             {product.discount > 0 && (
