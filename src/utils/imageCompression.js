@@ -1,4 +1,4 @@
-export const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.7) => {
+export const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.7, outputType = 'image/jpeg') => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -31,8 +31,14 @@ export const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0
         canvas.toBlob(
           (blob) => {
             if (blob) {
-              const compressedFile = new File([blob], file.name, {
-                type: 'image/jpeg',
+              const fileExt = outputType.split('/')[1] || 'jpg';
+              const originalName = file.name;
+              const baseName = originalName.includes('.') 
+                ? originalName.substring(0, originalName.lastIndexOf('.')) 
+                : originalName;
+              const newName = `${baseName}.${fileExt}`;
+              const compressedFile = new File([blob], newName, {
+                type: outputType,
                 lastModified: Date.now(),
               });
               resolve(compressedFile);
@@ -40,7 +46,7 @@ export const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0
               reject(new Error('Fallo al comprimir la imagen'));
             }
           },
-          'image/jpeg',
+          outputType,
           quality
         );
       };

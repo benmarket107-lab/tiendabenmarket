@@ -26,13 +26,13 @@ export default function BannersManager() {
       let finalImageUrl = formData.image;
 
       if (imageFile) {
-        const compressed = await compressImage(imageFile, 1920, 1080, 0.9);
+        const compressed = await compressImage(imageFile, 1920, 1080, 0.9, 'image/webp');
         const fileExt = compressed.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
-          .from('banners')
-          .upload(fileName, compressed);
+           .from('banners')
+           .upload(fileName, compressed);
           
         if (uploadError) throw uploadError;
 
