@@ -12,17 +12,54 @@ import { formatCurrency } from '../utils/currency';
 export default function BottomNavigation() {
   const { cart, addToCart } = useCart();
   const { user } = useAuth();
-  const { globalSearchQuery, setGlobalSearchQuery, products } = useAppContext();
+  const { globalSearchQuery, setGlobalSearchQuery, fetchProductsPage } = useAppContext();
   const router = useRouter();
   const pathname = usePathname();
   const location = { pathname };
   const navigate = (path) => router.push(path);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const searchInputRef = useRef(null);
 
-  const filteredProducts = products ? products.filter(p => 
-    p.name.toLowerCase().includes(globalSearchQuery.toLowerCase())
-  ) : [];
+  useEffect(() => {
+    let cancelled = false;
+    
+    const fetchResults = async () => {
+      if (!globalSearchQuery || globalSearchQuery.trim() === '') {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+      
+      setIsSearching(true);
+      try {
+        const { items } = await fetchProductsPage({
+          page: 1,
+          pageSize: 15,
+          searchQuery: globalSearchQuery
+        });
+        if (!cancelled) {
+          setSearchResults(items);
+        }
+      } catch (err) {
+        console.error("Error searching products in bottom nav", err);
+      } finally {
+        if (!cancelled) {
+          setIsSearching(false);
+        }
+      }
+    };
+
+    const timer = setTimeout(() => {
+      fetchResults();
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [globalSearchQuery, fetchProductsPage]);
 
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
   const isHome = location.pathname === '/';
@@ -160,7 +197,9 @@ export default function BottomNavigation() {
             ) : (
               <div className="space-y-3">
                 <div className="flex justify-between items-center mb-1">
-                  <p className="text-xs text-slate-450 font-bold uppercase tracking-wider">Productos encontrados ({filteredProducts.length})</p>
+                  <p className="text-xs text-slate-450 font-bold uppercase tracking-wider">
+                    {isSearching ? 'Buscando...' : `Productos encontrados (${searchResults.length})`}
+                  </p>
                   <button
                     onClick={handleSearchClose}
                     className="text-xs text-primary font-bold hover:underline"
@@ -168,13 +207,17 @@ export default function BottomNavigation() {
                     Ver en pantalla completa
                   </button>
                 </div>
-                {filteredProducts.length === 0 ? (
+                {isSearching ? (
+                  <div className="text-center py-8 text-slate-500 text-sm">
+                    Buscando resultados...
+                  </div>
+                ) : searchResults.length === 0 ? (
                   <div className="text-center py-8 text-slate-500 text-sm">
                     Ningún producto coincide con "{globalSearchQuery}"
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-2.5">
-                    {filteredProducts.map((p) => {
+                    {searchResults.map((p) => {
                       const isInCart = cart.some(item => item.id === p.id);
                       return (
                         <div key={p.id} className="flex items-center gap-3 p-2.5 bg-white border border-slate-100 rounded-2xl shadow-sm">
