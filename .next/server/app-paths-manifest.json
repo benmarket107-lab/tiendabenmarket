@@ -1,6 +1,7 @@
 {
-  "/login/page": "app/login/page.js",
   "/(client)/page": "app/(client)/page.js",
-  "/(client)/cart/page": "app/(client)/cart/page.js",
-  "/(client)/product/[id]/page": "app/(client)/product/[id]/page.js"
+  "/dashboard/categories/page": "app/dashboard/categories/page.js",
+  "/dashboard/products/page": "app/dashboard/products/page.js",
+  "/dashboard/banners/page": "app/dashboard/banners/page.js",
+  "/(client)/contact/page": "app/(client)/contact/page.js"
 }

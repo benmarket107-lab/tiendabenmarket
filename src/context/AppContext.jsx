@@ -149,17 +149,22 @@ export const AppProvider = ({ children }) => {
     categoryCode = null,
     searchQuery = '',
     stockFilter = 'all',
+    isRecommendedFilter = false,
   } = {}) => {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
     let query = supabase
       .from('productos')
-      .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,categorias(nombre)', { count: 'estimated' })
+      .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,campo_personalizado_1,categorias(nombre)', { count: 'estimated' })
       .order('nombre', { ascending: true });
 
     if (categoryCode) {
       query = query.eq('codigo_categoria', categoryCode);
+    }
+    
+    if (isRecommendedFilter) {
+      query = query.eq('campo_personalizado_1', 'true');
     }
 
     const q = String(searchQuery || '').trim();
@@ -193,7 +198,8 @@ export const AppProvider = ({ children }) => {
         stock: p.cantidad_disponible,
         image: p.foto_url || PRODUCT_PLACEHOLDER_IMAGE,
         category: p.categorias?.nombre || 'Sin Categoría',
-        unit: p.unidad || ''
+        unit: p.unidad || '',
+        isRecommended: p.campo_personalizado_1 === 'true'
       };
     });
 
@@ -217,7 +223,7 @@ export const AppProvider = ({ children }) => {
     for (const key of keysToTry) {
       const { data, error } = await supabase
         .from('productos')
-        .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,categorias(nombre)')
+        .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,campo_personalizado_1,categorias(nombre)')
         .eq('codigo_producto', key)
         .maybeSingle();
 
@@ -239,7 +245,8 @@ export const AppProvider = ({ children }) => {
           stock: data.cantidad_disponible,
           image: data.foto_url || PRODUCT_PLACEHOLDER_IMAGE,
           category: data.categorias?.nombre || 'Sin Categoría',
-          unit: data.unidad || ''
+          unit: data.unidad || '',
+          isRecommended: data.campo_personalizado_1 === 'true'
         };
 
         setProductById(prev => ({ ...prev, [key]: mapped, [id]: mapped }));
@@ -262,7 +269,8 @@ export const AppProvider = ({ children }) => {
       foto_url: product.image,
       descuento: product.discount || 0,
       codigo_categoria: cat ? cat.codigo_categoria : null,
-      unidad: product.unit || null
+      unidad: product.unit || null,
+      campo_personalizado_1: product.isRecommended ? 'true' : 'false'
     };
     
     const { data, error } = await supabase.from('productos').insert([dbProduct]).select();
@@ -293,6 +301,7 @@ export const AppProvider = ({ children }) => {
     if (updated.image !== undefined) dbProduct.foto_url = updated.image;
     if (updated.discount !== undefined) dbProduct.descuento = updated.discount;
     if (updated.unit !== undefined) dbProduct.unidad = updated.unit;
+    if (updated.isRecommended !== undefined) dbProduct.campo_personalizado_1 = updated.isRecommended ? 'true' : 'false';
     if (updated.category !== undefined) {
       const cat = rawCategories.find(c => c.nombre === updated.category);
       dbProduct.codigo_categoria = cat ? cat.codigo_categoria : null;
@@ -561,9 +570,28 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const updateCategory = async (codigo_categoria, dataUpdates) => {
+    const { error } = await supabase
+      .from('categorias')
+      .update(dataUpdates)
+      .eq('codigo_categoria', codigo_categoria);
+      
+    if (error) {
+      console.error('Error updating category:', error);
+      throw error;
+    }
+    
+    const { data: catData, error: catError } = await supabase.from('categorias').select('*');
+    if (!catError) {
+      setRawCategories(catData || []);
+      setCategories((catData || []).map(c => c.nombre));
+    }
+  };
+
+
   return (
     <AppContext.Provider value={{
-      categories, rawCategories,
+      categories, rawCategories, updateCategory,
       productById,
       fetchProductsPage,
       getProductById,

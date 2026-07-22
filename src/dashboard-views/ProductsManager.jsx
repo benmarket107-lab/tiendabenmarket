@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../supabaseClient';
 import { compressImage } from '../utils/imageCompression';
-import { Edit, Trash2, Plus, X, Upload, Download, FileJson } from 'lucide-react';
+import { Edit, Trash2, Plus, X, Upload, Download, FileJson, Star } from 'lucide-react';
 import { formatCurrency } from '../utils/currency';
 
 export default function ProductsManager() {
@@ -22,7 +22,7 @@ export default function ProductsManager() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const fileInputRef = useRef(null);
   
-  const [formData, setFormData] = useState({ name: '', price: '', category: '', stock: '', image: '', discount: 0 });
+  const [formData, setFormData] = useState({ name: '', price: '', category: '', stock: '', image: '', discount: 0, isRecommended: false });
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchTerm), 250);
@@ -79,11 +79,12 @@ export default function ProductsManager() {
       setFormData({ 
         ...product, 
         price: product.originalPrice !== undefined ? product.originalPrice : product.price,
-        discount: product.discount || 0
+        discount: product.discount || 0,
+        isRecommended: product.isRecommended || false
       });
     } else {
       setEditingProduct(null);
-      setFormData({ name: '', price: '', category: categories.length > 0 ? categories[0] : '', stock: '', image: 'https://placehold.co/200x200/ef4444/white?text=Nuevo', discount: 0, unit: '' });
+      setFormData({ name: '', price: '', category: categories.length > 0 ? categories[0] : '', stock: '', image: 'https://placehold.co/200x200/ef4444/white?text=Nuevo', discount: 0, unit: '', isRecommended: false });
     }
     setIsModalOpen(true);
   };
@@ -133,6 +134,17 @@ export default function ProductsManager() {
       alert(`Error al guardar: ${error.message || 'Error desconocido'}`);
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleToggleRecommended = async (product) => {
+    try {
+      const newStatus = !product.isRecommended;
+      await updateProduct(product.id, { isRecommended: newStatus });
+      setProducts(prev => prev.map(p => p.id === product.id ? { ...p, isRecommended: newStatus } : p));
+    } catch (error) {
+      console.error('Error toggling recommended:', error);
+      alert('Error al actualizar el estado de recomendado.');
     }
   };
 
@@ -292,10 +304,21 @@ export default function ProductsManager() {
                     </span>
                   </td>
                   <td className="p-4 flex justify-center gap-2">
-                    <button onClick={() => handleOpenModal(product)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
+                    <button 
+                      onClick={() => handleToggleRecommended(product)} 
+                      className={`p-1.5 rounded transition-colors ${
+                        product.isRecommended 
+                          ? 'text-amber-500 hover:bg-amber-50' 
+                          : 'text-slate-400 hover:bg-slate-100 hover:text-amber-500'
+                      }`}
+                      title={product.isRecommended ? "Quitar de Recomendados" : "Agregar a Recomendados"}
+                    >
+                      <Star className="w-4 h-4" fill={product.isRecommended ? "currentColor" : "none"} />
+                    </button>
+                    <button onClick={() => handleOpenModal(product)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Editar">
                       <Edit className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(product.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded">
+                    <button onClick={() => handleDelete(product.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Eliminar">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </td>
@@ -403,6 +426,18 @@ export default function ProductsManager() {
                     <p className="text-xs text-slate-500 mt-1">JPG, PNG, WEBP. Se optimizará automáticamente.</p>
                   </div>
                 </div>
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <input 
+                  type="checkbox" 
+                  id="isRecommended" 
+                  checked={formData.isRecommended || false} 
+                  onChange={e => setFormData({...formData, isRecommended: e.target.checked})} 
+                  className="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary cursor-pointer"
+                />
+                <label htmlFor="isRecommended" className="text-sm font-medium text-slate-700 cursor-pointer select-none">
+                  Producto Recomendado (Aparecerá en la página principal)
+                </label>
               </div>
               <div className="pt-4 flex gap-3 justify-end">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary" disabled={isUploading}>Cancelar</button>

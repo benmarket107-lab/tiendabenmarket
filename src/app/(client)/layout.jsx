@@ -7,7 +7,7 @@ export default function ClientLayout({ children }) {
   return (
     <div className="min-h-screen flex flex-col bg-surface font-body text-on-surface">
       <Navbar />
-      <main className="flex-1 mt-24 sm:mt-28 pb-20 md:pb-0">
+      <main className="flex-1 mt-20 sm:mt-28 pb-20 md:pb-0">
         {children}
       </main>
       <footer className="bg-[rgb(47,47,47)] py-6 sm:py-8 px-6 md:px-12 border-t border-white/10 text-white">
@@ -26,7 +26,7 @@ export default function ClientLayout({ children }) {
               <a href="https://www.facebook.com/benmarket24" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-white/70 hover:text-primary hover:scale-110 transition-all p-2 sm:p-0">
                 <Facebook className="w-6 h-6 sm:w-5 sm:h-5" />
               </a>
-              <a href="#" aria-label="WhatsApp" className="text-white/70 hover:text-primary hover:scale-110 transition-all p-2 sm:p-0">
+              <a href="https://wa.me/595981309030" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="text-white/70 hover:text-primary hover:scale-110 transition-all p-2 sm:p-0">
                 <Phone className="w-6 h-6 sm:w-5 sm:h-5" />
               </a>
             </div>
@@ -35,14 +35,14 @@ export default function ClientLayout({ children }) {
             <p className="font-bold mb-4 sm:mb-4 text-xs uppercase tracking-widest text-white">Nosotros</p>
             <ul className="space-y-3 sm:space-y-2 text-sm text-white/70 font-medium">
               <li><Link className="hover:text-primary transition-colors block py-1 sm:py-0" href="/about">Nuestra Historia</Link></li>
-              <li><Link className="hover:text-primary transition-colors block py-1 sm:py-0" href="/jobs">Trabaja con nosotros</Link></li>
+              <li className="hidden"><Link className="hover:text-primary transition-colors block py-1 sm:py-0" href="/jobs">Trabaja con nosotros</Link></li>
             </ul>
           </div>
           <div className="pt-4 sm:pt-0 border-t border-white/10 sm:border-0">
             <p className="font-bold mb-4 sm:mb-4 text-xs uppercase tracking-widest text-white">Ayuda</p>
             <ul className="space-y-3 sm:space-y-2 text-sm text-white/70 font-medium">
-              <li><Link className="hover:text-primary transition-colors block py-1 sm:py-0" href="/shipping">Envíos y Entregas</Link></li>
-              <li><Link className="hover:text-primary transition-colors block py-1 sm:py-0" href="/faq">Preguntas Frecuentes</Link></li>
+              <li className="hidden"><Link className="hover:text-primary transition-colors block py-1 sm:py-0" href="/shipping">Envíos y Entregas</Link></li>
+              <li className="hidden"><Link className="hover:text-primary transition-colors block py-1 sm:py-0" href="/faq">Preguntas Frecuentes</Link></li>
               <li><Link className="hover:text-primary transition-colors block py-1 sm:py-0" href="/contact">Contacto</Link></li>
             </ul>
           </div>

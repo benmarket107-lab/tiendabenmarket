@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, Users, Settings, BarChart, Package, Image as ImageIcon, Palette } from 'lucide-react';
+import { ShoppingBag, Users, Settings, BarChart, Package, Image as ImageIcon, Palette, Grid } from 'lucide-react';
 
 export default function Sidebar({ role }) {
   const pathname = usePathname();
@@ -13,12 +13,14 @@ export default function Sidebar({ role }) {
       { path: '/dashboard/theme', name: 'Personalizar Marca', icon: Palette },
       { path: '/dashboard/delivery', name: 'Configuración Tienda', icon: Settings },
       { path: '/dashboard/users', name: 'Gestión Usuarios', icon: Users },
+      { path: '/dashboard/categories', name: 'Gestión Categorías', icon: Grid },
       { path: '/dashboard/products', name: 'Gestión Productos', icon: Package },
       { path: '/dashboard/banners', name: 'Gestión Banners', icon: ImageIcon },
     ],
     Cajero: [
       { path: '/dashboard', name: 'Historial de Ventas', icon: ShoppingBag },
       { path: '/dashboard/delivery', name: 'Configuración Tienda', icon: Settings },
+      { path: '/dashboard/categories', name: 'Gestión Categorías', icon: Grid },
       { path: '/dashboard/products', name: 'Gestión Productos', icon: Package },
       { path: '/dashboard/banners', name: 'Gestión Banners', icon: ImageIcon },
     ],

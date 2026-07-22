@@ -7,7 +7,7 @@ import {
   Coffee, Carrot, Cookie, Milk, SearchX, 
   Mail, LayoutGrid, Leaf, Beer, Apple,
   Beef, Egg, Scissors, Baby, Dog, 
-  Cross, Cigarette, IceCream, Wheat, GlassWater
+  Cross, Cigarette, IceCream, Wheat, GlassWater, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 const getCategoryIcon = (cat) => {
@@ -35,7 +35,7 @@ const getCategoryIcon = (cat) => {
 
 export default function Home() {
   const { categories, rawCategories, globalSearchQuery, setGlobalSearchQuery, banners, bannersReady, fetchProductsPage } = useAppContext();
-  const [selectedCategory, setSelectedCategory] = useState('Todos los productos');
+  const [selectedCategory, setSelectedCategory] = useState('Productos Recomendados');
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,6 +55,13 @@ export default function Home() {
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCategory, globalSearchQuery]);
+
+  const scrollCategories = (direction) => {
+    if (scrollContainerRef.current) {
+      const amount = 300;
+      scrollContainerRef.current.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(globalSearchQuery), 250);
@@ -123,16 +130,17 @@ export default function Home() {
       setIsLoadingProducts(true);
 
       try {
-        const selectedCatCode =
+        const categoryCode =
           selectedCategory === 'Productos Recomendados'
             ? null
             : rawCategories?.find(c => c.nombre === selectedCategory)?.codigo_categoria || null;
 
         const { items, hasMore: nextHasMore } = await fetchProductsPage({
           page: currentPage,
-          pageSize,
-          categoryCode: selectedCatCode,
+          pageSize: 24,
+          categoryCode,
           searchQuery: debouncedQuery,
+          isRecommendedFilter: selectedCategory === 'Productos Recomendados',
         });
 
         if (cancelled) return;
@@ -163,36 +171,44 @@ export default function Home() {
       {/* Hero Section / Banner Slider */}
       {!bannersReady ? (
         <section className="mb-8 sm:mb-16 pt-0 relative">
-          <div className="relative h-[220px] sm:h-[380px] md:h-[500px] lg:h-[600px] w-full mx-auto overflow-hidden bg-surface-container-lowest shadow-sm">
+          <div className="relative aspect-[2/1] md:aspect-[12/5] w-full max-w-[1920px] mx-auto overflow-hidden bg-surface-container-lowest shadow-sm">
             <div className="absolute inset-0 bg-gradient-to-r from-surface-container-lowest via-surface-container-low to-surface-container-lowest animate-pulse" />
           </div>
         </section>
       ) : activeBanners.length > 0 ? (
         <section className="mb-8 sm:mb-16 pt-0 relative">
-          <div className="relative h-[220px] sm:h-[380px] md:h-[500px] lg:h-[600px] w-full mx-auto overflow-hidden bg-surface-container-lowest shadow-sm">
+          <div className="relative aspect-[2/1] md:aspect-[12/5] w-full max-w-[1920px] mx-auto overflow-hidden bg-slate-900 shadow-sm">
             {/* Slider Container */}
             <div 
-              className={`flex w-full h-full ${isTransitioning ? 'transition-transform duration-1000 ease-in-out' : 'transition-none'}`}
+              className={`absolute inset-0 flex w-full h-full ${isTransitioning ? 'transition-transform duration-1000 ease-in-out' : 'transition-none'}`}
               style={{ transform: `translateX(-${currentSlide * 100}%)` }}
             >
               {slides.map((banner, index) => (
-                <div key={`${banner.id}-${index}`} className="w-full h-full shrink-0 relative">
+                <div key={`${banner.id}-${index}`} className="w-full h-full shrink-0 relative bg-slate-900 overflow-hidden">
+                  {/* Blurred Background */}
+                  <img 
+                    src={banner.image}
+                    alt="" 
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110"
+                  />
+                  {/* Main Banner */}
                   <img 
                     src={banner.image}
                     alt={banner.name || `Banner ${index + 1}`} 
                     loading={index === 0 ? 'eager' : 'lazy'}
                     decoding="async"
-                    className="absolute inset-0 w-full h-full object-cover object-top"
+                    className="absolute inset-0 w-full h-full object-contain object-center z-10"
                   />
-                  {/* Overlay oscuro opcional para que se vean mejor los indicadores, pero sin texto */}
-                  <div className="absolute inset-0 bg-black/10"></div>
+                  {/* Overlay oscuro opcional para que se vean mejor los indicadores */}
+                  <div className="absolute inset-0 bg-black/20 z-20 pointer-events-none"></div>
                 </div>
               ))}
             </div>
 
             {/* Dots Indicators */}
             {activeBanners.length > 1 && (
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-20">
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-30">
                 {activeBanners.map((_, index) => (
                   <button
                     key={index}
@@ -244,22 +260,53 @@ export default function Home() {
               ele.scrollLeft = ele.scrollLeftStart - walk;
             }}
           >
-            {['Todos los productos', ...categories].map(cat => (
+            {['Productos Recomendados', ...categories].map(cat => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`snap-start flex-none px-5 sm:px-8 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base flex items-center gap-2 sm:gap-3 transition-all duration-300 active:scale-95 ${
-                  selectedCategory === cat
-                    ? 'bg-primary text-on-primary shadow-lg shadow-primary/20 -translate-y-1'
-                    : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high border border-outline-variant/20 hover:shadow-md'
-                }`}
+                className={`snap-start flex-none flex flex-col items-center gap-2 transition-all duration-300 active:scale-95 group w-20 sm:w-24`}
               >
-                <div className={selectedCategory === cat ? 'text-on-primary' : 'text-primary'}>
-                  {cat === 'Todos los productos' ? <LayoutGrid size={20} /> : getCategoryIcon(cat)}
+                <div 
+                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
+                    selectedCategory === cat 
+                      ? 'border-primary bg-primary/10 shadow-md shadow-primary/20 scale-105' 
+                      : 'border-slate-200 bg-white group-hover:border-primary/50 group-hover:shadow-md'
+                  }`}
+                >
+                  {cat === 'Productos Recomendados' ? (
+                    <LayoutGrid size={28} className={selectedCategory === cat ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} />
+                  ) : (() => {
+                    const categoryObj = rawCategories?.find(c => c.nombre === cat);
+                    if (categoryObj?.foto_url) {
+                      return <img src={categoryObj.foto_url} alt={cat} className="w-full h-full object-cover rounded-full p-0.5" />;
+                    }
+                    return <div className={selectedCategory === cat ? 'text-primary' : 'text-slate-500 group-hover:text-primary'}>{getCategoryIcon(cat)}</div>;
+                  })()}
                 </div>
-                {cat}
+                <span className={`text-xs sm:text-sm font-bold text-center leading-tight line-clamp-2 ${
+                  selectedCategory === cat ? 'text-primary' : 'text-slate-600'
+                }`}>
+                  {cat}
+                </span>
               </button>
             ))}
+          </div>
+
+          <div className="flex justify-center gap-4 mt-2">
+            <button 
+              onClick={() => scrollCategories('left')} 
+              className="p-2 rounded-full bg-white border border-slate-200 text-slate-500 shadow-sm hover:bg-slate-50 hover:text-primary active:scale-95 transition-all"
+              aria-label="Desplazar a la izquierda"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <button 
+              onClick={() => scrollCategories('right')} 
+              className="p-2 rounded-full bg-white border border-slate-200 text-slate-500 shadow-sm hover:bg-slate-50 hover:text-primary active:scale-95 transition-all"
+              aria-label="Desplazar a la derecha"
+            >
+              <ChevronRight size={24} />
+            </button>
           </div>
         </section>
       )}

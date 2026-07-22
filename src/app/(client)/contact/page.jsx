@@ -63,7 +63,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="font-bold text-on-surface">Teléfono / WhatsApp</p>
-                    <p className="text-sm text-on-surface-variant mt-1">+595 9XX XXX XXX</p>
+                    <p className="text-sm text-on-surface-variant mt-1">+595 981 309030</p>
                   </div>
                 </div>
 
@@ -73,7 +73,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="font-bold text-on-surface">Correo Electrónico</p>
-                    <p className="text-sm text-on-surface-variant mt-1">contacto@benmarket.com.py</p>
+                    <p className="text-sm text-on-surface-variant mt-1">caja@benmarket.com.py</p>
                   </div>
                 </div>
 
@@ -83,7 +83,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="font-bold text-on-surface">Horario de Atención</p>
-                    <p className="text-sm text-on-surface-variant mt-1">Lun a Sáb: 07:00 - 22:00 hrs<br/>Dom: 08:00 - 14:00 hrs</p>
+                    <p className="text-sm text-on-surface-variant mt-1">24 hs Todos los días</p>
                   </div>
                 </div>
               </div>
