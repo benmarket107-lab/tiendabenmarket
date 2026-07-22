@@ -54,16 +54,7 @@ export default {
         "lg": "0.5rem",
         "xl": "0.75rem",
         "full": "9999px"
-      },
-      keyframes: {
-        marquee: {
-          '0%': { transform: 'translateX(0%)' },
-          '100%': { transform: 'translateX(-100%)' },
-        }
-      },
-      animation: {
-        marquee: 'marquee 25s linear infinite',
-      },
+      }
     },
   },
   plugins: [],

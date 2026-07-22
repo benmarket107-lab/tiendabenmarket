@@ -60,31 +60,7 @@ export default function HomeClient() {
     }
   };
 
-  useEffect(() => {
-    if (scrollContainerRef.current && categories.length > 0) {
-      const ele = scrollContainerRef.current;
-      // Centrar el scroll en el segundo set para que se pueda hacer scroll a la izquierda
-      if (ele.scrollLeft === 0) {
-        // Necesitamos esperar un momento para que scrollWidth se calcule correctamente
-        setTimeout(() => {
-          if (ele) ele.scrollLeft = ele.scrollWidth / 4;
-        }, 100);
-      }
-    }
-  }, [categories]);
 
-  const handleCategoryScroll = () => {
-    const ele = scrollContainerRef.current;
-    if (!ele || ele.isDown) return;
-    
-    const setWidth = ele.scrollWidth / 4;
-    
-    if (ele.scrollLeft >= setWidth * 3) {
-      ele.scrollLeft -= setWidth;
-    } else if (ele.scrollLeft <= 0) {
-      ele.scrollLeft += setWidth;
-    }
-  };
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(globalSearchQuery), 250);
@@ -261,7 +237,6 @@ export default function HomeClient() {
           <div 
             ref={scrollContainerRef}
             className="flex overflow-x-auto hide-scrollbar gap-2.5 sm:gap-4 px-4 sm:px-6 pb-6 pt-2 snap-x cursor-grab active:cursor-grabbing"
-            onScroll={handleCategoryScroll}
             onMouseDown={(e) => {
               const ele = scrollContainerRef.current;
               if (!ele) return;
@@ -284,7 +259,7 @@ export default function HomeClient() {
               ele.scrollLeft = ele.scrollLeftStart - walk;
             }}
           >
-            {[...Array(4)].flatMap(() => ['Productos Recomendados', ...categories]).map((cat, index) => (
+            {['Productos Recomendados', ...categories].map((cat, index) => (
               <button
                 key={`${cat}-${index}`}
                 onClick={() => setSelectedCategory(cat)}
