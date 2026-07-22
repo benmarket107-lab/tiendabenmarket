@@ -61,6 +61,32 @@ export default function HomeClient() {
   };
 
   useEffect(() => {
+    if (scrollContainerRef.current && categories.length > 0) {
+      const ele = scrollContainerRef.current;
+      // Centrar el scroll en el segundo set para que se pueda hacer scroll a la izquierda
+      if (ele.scrollLeft === 0) {
+        // Necesitamos esperar un momento para que scrollWidth se calcule correctamente
+        setTimeout(() => {
+          if (ele) ele.scrollLeft = ele.scrollWidth / 4;
+        }, 100);
+      }
+    }
+  }, [categories]);
+
+  const handleCategoryScroll = () => {
+    const ele = scrollContainerRef.current;
+    if (!ele || ele.isDown) return;
+    
+    const setWidth = ele.scrollWidth / 4;
+    
+    if (ele.scrollLeft >= setWidth * 3) {
+      ele.scrollLeft -= setWidth;
+    } else if (ele.scrollLeft <= 0) {
+      ele.scrollLeft += setWidth;
+    }
+  };
+
+  useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(globalSearchQuery), 250);
     return () => clearTimeout(t);
   }, [globalSearchQuery]);
@@ -232,73 +258,79 @@ export default function HomeClient() {
         <section className="mb-4 sm:mb-6 max-w-7xl mx-auto relative">
           <h2 className="sr-only">Nuestros Productos</h2>
           
-          <div className="flex overflow-hidden group pb-6 pt-2 [mask-image:_linear-gradient(to_right,transparent_0,_black_32px,_black_calc(100%-32px),transparent_100%)] sm:[mask-image:_linear-gradient(to_right,transparent_0,_black_64px,_black_calc(100%-64px),transparent_100%)]">
-            <div className="flex shrink-0 animate-marquee gap-2.5 sm:gap-4 pr-2.5 sm:pr-4 group-hover:[animation-play-state:paused] px-4 sm:px-6">
-              {['Productos Recomendados', ...categories].map(cat => (
-                <button
-                  key={`orig-${cat}`}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`flex-none flex flex-col items-center gap-2 transition-all duration-300 active:scale-95 group/btn w-20 sm:w-24`}
+          <div 
+            ref={scrollContainerRef}
+            className="flex overflow-x-auto hide-scrollbar gap-2.5 sm:gap-4 px-4 sm:px-6 pb-6 pt-2 snap-x cursor-grab active:cursor-grabbing"
+            onScroll={handleCategoryScroll}
+            onMouseDown={(e) => {
+              const ele = scrollContainerRef.current;
+              if (!ele) return;
+              ele.isDown = true;
+              ele.startX = e.pageX - ele.offsetLeft;
+              ele.scrollLeftStart = ele.scrollLeft;
+            }}
+            onMouseLeave={() => {
+              if (scrollContainerRef.current) scrollContainerRef.current.isDown = false;
+            }}
+            onMouseUp={() => {
+              if (scrollContainerRef.current) scrollContainerRef.current.isDown = false;
+            }}
+            onMouseMove={(e) => {
+              const ele = scrollContainerRef.current;
+              if (!ele || !ele.isDown) return;
+              e.preventDefault();
+              const x = e.pageX - ele.offsetLeft;
+              const walk = (x - ele.startX) * 2;
+              ele.scrollLeft = ele.scrollLeftStart - walk;
+            }}
+          >
+            {[...Array(4)].flatMap(() => ['Productos Recomendados', ...categories]).map((cat, index) => (
+              <button
+                key={`${cat}-${index}`}
+                onClick={() => setSelectedCategory(cat)}
+                className={`snap-start flex-none flex flex-col items-center gap-2 transition-all duration-300 active:scale-95 group w-20 sm:w-24`}
+              >
+                <div 
+                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
+                    selectedCategory === cat 
+                      ? 'border-primary bg-primary/10 shadow-md shadow-primary/20 scale-105' 
+                      : 'border-slate-200 bg-white group-hover:border-primary/50 group-hover:shadow-md'
+                  }`}
                 >
-                  <div 
-                    className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
-                      selectedCategory === cat 
-                        ? 'border-primary bg-primary/10 shadow-md shadow-primary/20 scale-105' 
-                        : 'border-slate-200 bg-white group-hover/btn:border-primary/50 group-hover/btn:shadow-md'
-                    }`}
-                  >
-                    {cat === 'Productos Recomendados' ? (
-                      <LayoutGrid size={28} className={selectedCategory === cat ? 'text-primary' : 'text-slate-500 group-hover/btn:text-primary'} />
-                    ) : (() => {
-                      const categoryObj = rawCategories?.find(c => c.nombre === cat);
-                      if (categoryObj?.foto_url) {
-                        return <img src={categoryObj.foto_url} alt={cat} className="w-full h-full object-cover rounded-full p-0.5" />;
-                      }
-                      return <div className={selectedCategory === cat ? 'text-primary' : 'text-slate-500 group-hover/btn:text-primary'}>{getCategoryIcon(cat)}</div>;
-                    })()}
-                  </div>
-                  <span className={`text-xs sm:text-sm font-bold text-center leading-tight line-clamp-2 ${
-                    selectedCategory === cat ? 'text-primary' : 'text-slate-600'
-                  }`}>
-                    {cat}
-                  </span>
-                </button>
-              ))}
-            </div>
-            
-            <div className="flex shrink-0 animate-marquee gap-2.5 sm:gap-4 pr-2.5 sm:pr-4 group-hover:[animation-play-state:paused]" aria-hidden="true">
-              {['Productos Recomendados', ...categories].map(cat => (
-                <button
-                  key={`dup-${cat}`}
-                  onClick={() => setSelectedCategory(cat)}
-                  tabIndex="-1"
-                  className={`flex-none flex flex-col items-center gap-2 transition-all duration-300 active:scale-95 group/btn w-20 sm:w-24`}
-                >
-                  <div 
-                    className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
-                      selectedCategory === cat 
-                        ? 'border-primary bg-primary/10 shadow-md shadow-primary/20 scale-105' 
-                        : 'border-slate-200 bg-white group-hover/btn:border-primary/50 group-hover/btn:shadow-md'
-                    }`}
-                  >
-                    {cat === 'Productos Recomendados' ? (
-                      <LayoutGrid size={28} className={selectedCategory === cat ? 'text-primary' : 'text-slate-500 group-hover/btn:text-primary'} />
-                    ) : (() => {
-                      const categoryObj = rawCategories?.find(c => c.nombre === cat);
-                      if (categoryObj?.foto_url) {
-                        return <img src={categoryObj.foto_url} alt={cat} className="w-full h-full object-cover rounded-full p-0.5" />;
-                      }
-                      return <div className={selectedCategory === cat ? 'text-primary' : 'text-slate-500 group-hover/btn:text-primary'}>{getCategoryIcon(cat)}</div>;
-                    })()}
-                  </div>
-                  <span className={`text-xs sm:text-sm font-bold text-center leading-tight line-clamp-2 ${
-                    selectedCategory === cat ? 'text-primary' : 'text-slate-600'
-                  }`}>
-                    {cat}
-                  </span>
-                </button>
-              ))}
-            </div>
+                  {cat === 'Productos Recomendados' ? (
+                    <LayoutGrid size={28} className={selectedCategory === cat ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} />
+                  ) : (() => {
+                    const categoryObj = rawCategories?.find(c => c.nombre === cat);
+                    if (categoryObj?.foto_url) {
+                      return <img src={categoryObj.foto_url} alt={cat} className="w-full h-full object-cover rounded-full p-0.5" />;
+                    }
+                    return <div className={selectedCategory === cat ? 'text-primary' : 'text-slate-500 group-hover:text-primary'}>{getCategoryIcon(cat)}</div>;
+                  })()}
+                </div>
+                <span className={`text-xs sm:text-sm font-bold text-center leading-tight line-clamp-2 ${
+                  selectedCategory === cat ? 'text-primary' : 'text-slate-600'
+                }`}>
+                  {cat}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex justify-center gap-4 mt-2">
+            <button 
+              onClick={() => scrollCategories('left')} 
+              className="p-2 rounded-full bg-white border border-slate-200 text-slate-500 shadow-sm hover:bg-slate-50 hover:text-primary active:scale-95 transition-all"
+              aria-label="Desplazar a la izquierda"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <button 
+              onClick={() => scrollCategories('right')} 
+              className="p-2 rounded-full bg-white border border-slate-200 text-slate-500 shadow-sm hover:bg-slate-50 hover:text-primary active:scale-95 transition-all"
+              aria-label="Desplazar a la derecha"
+            >
+              <ChevronRight size={24} />
+            </button>
           </div>
         </section>
       )}
