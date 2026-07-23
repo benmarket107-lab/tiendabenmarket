@@ -14,7 +14,7 @@ export default function ClientLayout({ children }) {
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-8 text-center sm:text-left">
           <div className="col-span-1 sm:col-span-2 md:col-span-1 flex flex-col items-center sm:items-start">
             <img 
-              src="/logo_new.webp" 
+              src="/logo.webp" 
               alt="Logo Benmarket" 
               className="h-12 w-auto object-contain object-center sm:object-left mb-3 sm:mb-3"
             />

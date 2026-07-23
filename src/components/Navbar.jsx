@@ -233,7 +233,7 @@ export default function Navbar() {
           <div className="flex justify-between h-20 sm:h-28 items-center gap-2 sm:gap-6">
             <Link href="/" className="flex items-center group shrink-0">
                 <img 
-                  src="/logo_new.webp" 
+                  src="/logo.webp" 
                 alt="Logo Benmarket" 
                 className="h-12 sm:h-24 w-auto sm:w-[280px] object-contain object-left group-hover:scale-105 transition-transform"
               />
