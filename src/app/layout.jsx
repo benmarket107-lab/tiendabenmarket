@@ -1,5 +1,6 @@
 import '../index.css';
 import Providers from './providers';
+import Script from 'next/script';
 
 export const metadata = {
   title: 'Benmarket Express',
@@ -29,6 +30,18 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="bg-surface font-body text-on-surface">
+        <Script 
+          src="https://www.googletagmanager.com/gtag/js?id=G-Z9S2PHP0ES" 
+          strategy="afterInteractive" 
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-Z9S2PHP0ES');
+          `}
+        </Script>
         <Providers>
           {children}
         </Providers>
