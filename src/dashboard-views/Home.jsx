@@ -264,7 +264,7 @@ export default function Home() {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`snap-start flex-none flex flex-col items-center gap-2 transition-all duration-300 active:scale-95 group w-20 sm:w-24`}
+                className={`snap-start flex-none flex flex-col items-center gap-2 transition-all duration-300 active:scale-95 group w-24 sm:w-28`}
               >
                 <div 
                   className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${

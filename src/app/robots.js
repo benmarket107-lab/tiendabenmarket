@@ -11,8 +11,7 @@ export default function robots() {
         '/dashboard/',
         '/bienvenida/',
         '/confirm/',
-        '/login/',
-        '/register/'
+        '/login/'
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
