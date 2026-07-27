@@ -9,12 +9,14 @@ export default function CategoriesManager() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [editName, setEditName] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [previewImage, setPreviewImage] = useState('');
   const fileInputRef = useRef(null);
 
   const handleEditClick = (cat) => {
     setSelectedCategory(cat);
+    setEditName(cat.nombre || '');
     setPreviewImage(cat.foto_url || '');
     setImageFile(null);
     setIsModalOpen(true);
@@ -52,10 +54,16 @@ export default function CategoriesManager() {
         finalImageUrl = publicUrlData.publicUrl;
       }
 
-      if (selectedCategory && finalImageUrl !== selectedCategory.foto_url) {
-        await updateCategory(selectedCategory.codigo_categoria, {
-          foto_url: finalImageUrl
-        });
+      const updateData = {};
+      if (finalImageUrl !== selectedCategory.foto_url) {
+        updateData.foto_url = finalImageUrl;
+      }
+      if (editName.trim() !== '' && editName.trim() !== selectedCategory.nombre) {
+        updateData.nombre = editName.trim();
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await updateCategory(selectedCategory.codigo_categoria, updateData);
       }
       
       setIsModalOpen(false);
@@ -72,7 +80,7 @@ export default function CategoriesManager() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Gestión de Categorías</h1>
-          <p className="text-slate-500 text-sm mt-1">Administra los iconos o imágenes de las categorías.</p>
+          <p className="text-slate-500 text-sm mt-1">Administra los nombres e imágenes de las categorías.</p>
         </div>
       </div>
 
@@ -91,7 +99,7 @@ export default function CategoriesManager() {
               onClick={() => handleEditClick(cat)}
               className="mt-auto flex items-center gap-2 text-sm font-bold text-primary hover:text-primary-dark transition-colors"
             >
-              <Pencil className="w-4 h-4" /> Editar Imagen
+              <Pencil className="w-4 h-4" /> Editar Categoría
             </button>
           </div>
         ))}
@@ -119,9 +127,10 @@ export default function CategoriesManager() {
                   <label className="block text-sm font-bold text-slate-700 mb-1">Nombre</label>
                   <input 
                     type="text" 
-                    value={selectedCategory?.nombre || ''}
-                    disabled
-                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-500 font-medium cursor-not-allowed"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Nombre de la categoría"
+                    className="w-full p-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-medium text-slate-800"
                   />
                 </div>
 
