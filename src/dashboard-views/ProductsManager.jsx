@@ -22,7 +22,7 @@ export default function ProductsManager() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const fileInputRef = useRef(null);
   
-  const [formData, setFormData] = useState({ name: '', price: '', category: '', stock: '', image: '', discount: 0, isRecommended: false });
+  const [formData, setFormData] = useState({ name: '', price: '', category: '', stock: '', image: '', discount: 0, barcode: '', isRecommended: false });
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchTerm), 250);
@@ -72,6 +72,61 @@ export default function ProductsManager() {
     };
   }, [fetchProductsPage, rawCategories, categoryFilter, stockFilter, debouncedSearch, currentPage, reloadKey]);
 
+  useEffect(() => {
+    let barcodeBuffer = '';
+    let interval;
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+      if (isModalOpen) return;
+      
+      if (interval) clearInterval(interval);
+      
+      if (e.key === 'Enter') {
+        if (barcodeBuffer.length > 3) {
+          const scanned = barcodeBuffer;
+          
+          // Función asíncrona para buscar en toda la base de datos
+          const verificarYActuar = async () => {
+            const { data, error } = await supabase
+              .from('productos')
+              .select('codigo_producto')
+              .eq('codigo_barras', scanned)
+              .limit(1);
+
+            if (data && data.length > 0) {
+              // Si el producto existe en CUALQUIER página de la DB, simplemente lo buscamos para mostrarlo
+              setSearchTerm(scanned);
+            } else {
+              // Si definitivamente NO existe, abrimos el modal para crearlo
+              setEditingProduct(null);
+              setFormData({ 
+                name: '', price: '', 
+                category: categories.length > 0 ? categories[0] : '', 
+                stock: '', image: 'https://placehold.co/200x200/ef4444/white?text=Nuevo', 
+                discount: 0, unit: '', barcode: scanned, isRecommended: false 
+              });
+              setIsModalOpen(true);
+            }
+          };
+          
+          verificarYActuar();
+        }
+        barcodeBuffer = '';
+        return;
+      }
+      
+      if (e.key !== 'Shift' && e.key.length === 1) {
+        barcodeBuffer += e.key;
+      }
+      interval = setInterval(() => barcodeBuffer = '', 50);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (interval) clearInterval(interval);
+    };
+  }, [isModalOpen, products, categories]);
+
   const handleOpenModal = (product = null) => {
     setImageFile(null);
     if (product) {
@@ -84,14 +139,45 @@ export default function ProductsManager() {
       });
     } else {
       setEditingProduct(null);
-      setFormData({ name: '', price: '', category: categories.length > 0 ? categories[0] : '', stock: '', image: 'https://placehold.co/200x200/ef4444/white?text=Nuevo', discount: 0, unit: '', isRecommended: false });
+      setFormData({ name: '', price: '', category: categories.length > 0 ? categories[0] : '', stock: '', image: 'https://placehold.co/200x200/ef4444/white?text=Nuevo', discount: 0, unit: '', barcode: '', isRecommended: false });
     }
     setIsModalOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsUploading(true);
+
+    // Validar que el código de barras no exista ya en otro producto
+    if (formData.barcode && formData.barcode.trim() !== '') {
+      setIsUploading(true);
+      try {
+        let query = supabase
+          .from('productos')
+          .select('codigo_producto')
+          .eq('codigo_barras', formData.barcode.trim());
+          
+        if (editingProduct) {
+          query = query.neq('codigo_producto', editingProduct.id);
+        }
+
+        const { data: existingProducts, error: checkError } = await query.limit(1);
+          
+        if (checkError) throw checkError;
+
+        if (existingProducts && existingProducts.length > 0) {
+          alert('¡Error! Ya existe otro producto registrado con este mismo código de barras.');
+          setIsUploading(false);
+          return;
+        }
+      } catch (err) {
+        console.error('Error al validar código de barras:', err);
+        alert('Hubo un error al validar el código de barras.');
+        setIsUploading(false);
+        return;
+      }
+    } else {
+      setIsUploading(true);
+    }
     
     try {
       let finalImageUrl = formData.image;
@@ -388,7 +474,7 @@ export default function ProductsManager() {
                   <input required type="number" min="0" className="input-field" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
                   <select className="input-field" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
@@ -396,8 +482,12 @@ export default function ProductsManager() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Unidad de Medida</label>
-                  <input type="text" className="input-field" placeholder="Ej: kg, litro, unidad" value={formData.unit || ''} onChange={e => setFormData({...formData, unit: e.target.value})} />
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Unidad</label>
+                  <input type="text" className="input-field" placeholder="Ej: kg, litro" value={formData.unit || ''} onChange={e => setFormData({...formData, unit: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Cód. Barras</label>
+                  <input type="text" className="input-field" placeholder="Escanear..." value={formData.barcode || ''} onChange={e => setFormData({...formData, barcode: e.target.value})} />
                 </div>
               </div>
               <div>

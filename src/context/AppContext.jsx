@@ -156,7 +156,7 @@ export const AppProvider = ({ children }) => {
 
     let query = supabase
       .from('productos')
-      .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,campo_personalizado_1,categorias(nombre)', { count: 'estimated' })
+      .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,campo_personalizado_1,codigo_barras,categorias(nombre)', { count: 'estimated' })
       .order('nombre', { ascending: true });
 
     if (categoryCode) {
@@ -169,7 +169,7 @@ export const AppProvider = ({ children }) => {
 
     const q = String(searchQuery || '').trim();
     if (q) {
-      query = query.ilike('nombre', `%${q}%`);
+      query = query.or(`nombre.ilike.%${q}%,codigo_barras.ilike.%${q}%`);
     }
 
     if (stockFilter === 'in-stock') {
@@ -199,6 +199,7 @@ export const AppProvider = ({ children }) => {
         image: p.foto_url || PRODUCT_PLACEHOLDER_IMAGE,
         category: p.categorias?.nombre || 'Sin Categoría',
         unit: p.unidad || '',
+        barcode: p.codigo_barras || '',
         isRecommended: p.campo_personalizado_1 === 'true'
       };
     });
@@ -223,7 +224,7 @@ export const AppProvider = ({ children }) => {
     for (const key of keysToTry) {
       const { data, error } = await supabase
         .from('productos')
-        .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,campo_personalizado_1,categorias(nombre)')
+        .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,campo_personalizado_1,codigo_barras,categorias(nombre)')
         .eq('codigo_producto', key)
         .maybeSingle();
 
@@ -246,6 +247,7 @@ export const AppProvider = ({ children }) => {
           image: data.foto_url || PRODUCT_PLACEHOLDER_IMAGE,
           category: data.categorias?.nombre || 'Sin Categoría',
           unit: data.unidad || '',
+          barcode: data.codigo_barras || '',
           isRecommended: data.campo_personalizado_1 === 'true'
         };
 
@@ -270,6 +272,7 @@ export const AppProvider = ({ children }) => {
       descuento: product.discount || 0,
       codigo_categoria: cat ? cat.codigo_categoria : null,
       unidad: product.unit || null,
+      codigo_barras: product.barcode || null,
       campo_personalizado_1: product.isRecommended ? 'true' : 'false'
     };
     
@@ -287,7 +290,8 @@ export const AppProvider = ({ children }) => {
         originalPrice: basePrice,
         price: activePrice,
         discount: desc,
-        unit: product.unit || ''
+        unit: product.unit || '',
+        barcode: product.barcode || ''
       };
       setProductById(prev => ({ ...prev, [newId]: mapped }));
     }
@@ -301,6 +305,7 @@ export const AppProvider = ({ children }) => {
     if (updated.image !== undefined) dbProduct.foto_url = updated.image;
     if (updated.discount !== undefined) dbProduct.descuento = updated.discount;
     if (updated.unit !== undefined) dbProduct.unidad = updated.unit;
+    if (updated.barcode !== undefined) dbProduct.codigo_barras = updated.barcode;
     if (updated.isRecommended !== undefined) dbProduct.campo_personalizado_1 = updated.isRecommended ? 'true' : 'false';
     if (updated.category !== undefined) {
       const cat = rawCategories.find(c => c.nombre === updated.category);
@@ -322,9 +327,10 @@ export const AppProvider = ({ children }) => {
           ...existing,
           ...updated,
           id,
-          originalPrice: newBasePrice,
           price: newActivePrice,
-          discount: newDesc
+          originalPrice: newBasePrice,
+          discount: newDesc,
+          barcode: updated.barcode !== undefined ? updated.barcode : (existing.barcode || '')
         };
         return { ...prev, [id]: mapped };
       });

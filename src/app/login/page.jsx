@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -15,6 +15,11 @@ export default function LoginPage() {
   const { login, loginWithGoogle } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    document.body.style.backgroundColor = 'rgb(47,47,47)';
+    return () => { document.body.style.backgroundColor = ''; };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,7 +55,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-tr from-slate-100 to-slate-50 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[rgb(47,47,47)] relative overflow-hidden">
       {/* Background patterns */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
       <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-primary/10 blur-3xl"></div>
@@ -60,11 +65,11 @@ export default function LoginPage() {
         <div className="text-center">
           <div className="mx-auto mb-8 flex justify-center">
             <Link href="/" className="hover:opacity-80 transition-opacity">
-              <img src="/logo_new.webp" alt="Logo Benmarket" className="h-20 w-auto object-contain drop-shadow-md" />
+              <img src="/logo.webp" alt="Logo Benmarket" className="h-20 w-auto object-contain drop-shadow-md" />
             </Link>
           </div>
-          <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">Iniciar Sesión</h2>
-          <p className="mt-2 text-sm text-slate-600">
+          <h2 className="text-4xl font-extrabold text-white tracking-tight">Iniciar Sesión</h2>
+          <p className="mt-2 text-sm text-slate-300">
             ¿No tienes una cuenta?{' '}
             <Link href="/register" className="font-bold text-primary hover:text-primary/90 transition-colors">
               Regístrate aquí

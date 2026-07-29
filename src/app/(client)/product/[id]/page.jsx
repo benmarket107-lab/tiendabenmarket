@@ -141,6 +141,11 @@ export default function ProductDetailsPage() {
             {product.name}
             {product.unit && <span className="text-lg sm:text-xl font-bold text-slate-500 block mt-2">({product.unit})</span>}
           </h1>
+          {product.barcode && (
+            <p className="text-sm sm:text-base font-medium text-slate-500 mb-4">
+              Cod {product.barcode}
+            </p>
+          )}
           <div className="flex flex-wrap items-baseline gap-3 mb-6">
             <span className="text-4xl font-black text-slate-900">{formatCurrency(product.price)}</span>
             {product.discount > 0 && (
