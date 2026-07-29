@@ -92,7 +92,7 @@ export const AppProvider = ({ children }) => {
       if (!waError && waData) {
         setWhatsappNumber(waData.valor || '');
       } else {
-        setWhatsappNumber(import.meta.env.VITE_WHATSAPP_NUMBER || '595981000000');
+        setWhatsappNumber(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '595981000000');
       }
 
       // Fetch Categories

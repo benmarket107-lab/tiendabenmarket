@@ -14,7 +14,7 @@ export default function Providers({ children }) {
           const registration = await navigator.serviceWorker.register('/sw.js');
           console.log('PWA Service Worker registrado con éxito:', registration.scope);
         } catch (error) {
-          console.error('Error al registrar el Service Worker de la PWA:', error);
+          console.warn('Service Worker no disponible:', error?.message || error);
         }
       };
       
