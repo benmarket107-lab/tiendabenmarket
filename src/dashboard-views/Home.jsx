@@ -133,7 +133,7 @@ export default function Home() {
         const categoryCode =
           selectedCategory === 'Productos Recomendados'
             ? null
-            : rawCategories?.find(c => c.nombre === selectedCategory)?.codigo_categoria || null;
+            : rawCategories?.find(c => c.nombre === selectedCategory)?.codigo_categoria ?? null;
 
         const { items, hasMore: nextHasMore } = await fetchProductsPage({
           page: currentPage,

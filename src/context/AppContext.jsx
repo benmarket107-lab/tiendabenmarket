@@ -157,9 +157,10 @@ export const AppProvider = ({ children }) => {
     let query = supabase
       .from('productos')
       .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,campo_personalizado_1,codigo_barras,categorias(nombre)', { count: 'estimated' })
+      .order('descuento', { ascending: false, nullsFirst: false })
       .order('nombre', { ascending: true });
 
-    if (categoryCode) {
+    if (categoryCode !== null && categoryCode !== undefined && categoryCode !== '') {
       query = query.eq('codigo_categoria', categoryCode);
     }
     

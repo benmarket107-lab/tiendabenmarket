@@ -9,6 +9,7 @@ export default function ProductsManager() {
   const { categories, rawCategories, fetchProductsPage, addProduct, updateProduct, deleteProduct } = useAppContext();
   const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingList, setIsLoadingList] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,7 +32,7 @@ export default function ProductsManager() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [stockFilter, categoryFilter, debouncedSearch]);
+  }, [stockFilter, categoryFilter, debouncedSearch, pageSize]);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,11 +43,11 @@ export default function ProductsManager() {
         const categoryCode =
           categoryFilter === 'all'
             ? null
-            : rawCategories?.find(c => c.nombre === categoryFilter)?.codigo_categoria || null;
+            : rawCategories?.find(c => c.nombre === categoryFilter)?.codigo_categoria ?? null;
 
         const { items, hasMore: nextHasMore } = await fetchProductsPage({
           page: currentPage,
-          pageSize: 25,
+          pageSize: pageSize === 'all' ? 10000 : pageSize,
           categoryCode,
           searchQuery: debouncedSearch,
           stockFilter,
@@ -54,7 +55,7 @@ export default function ProductsManager() {
 
         if (cancelled) return;
         setHasMore(Boolean(nextHasMore));
-        setProducts(prev => (currentPage === 1 ? items : [...prev, ...items]));
+        setProducts(items);
       } catch (error) {
         if (!cancelled) {
           setProducts([]);
@@ -70,7 +71,7 @@ export default function ProductsManager() {
     return () => {
       cancelled = true;
     };
-  }, [fetchProductsPage, rawCategories, categoryFilter, stockFilter, debouncedSearch, currentPage, reloadKey]);
+  }, [fetchProductsPage, rawCategories, categoryFilter, stockFilter, debouncedSearch, currentPage, reloadKey, pageSize]);
 
   useEffect(() => {
     let barcodeBuffer = '';
@@ -419,18 +420,34 @@ export default function ProductsManager() {
         <div className="text-sm text-slate-500">
           {isLoadingList ? 'Cargando productos...' : `Mostrando ${products.length} productos`}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-3">
           <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1 || isLoadingList}
+            onClick={() => setPageSize('all')}
+            disabled={pageSize === 'all' || isLoadingList}
+            className="px-4 py-2 rounded-lg font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Mostrar todos
+          </button>
+          
+          <button
+            onClick={() => {
+              setPageSize(25);
+              setCurrentPage(p => Math.max(1, p - 1));
+            }}
+            disabled={currentPage === 1 || isLoadingList || pageSize === 'all'}
             className="px-4 py-2 rounded-lg font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Anterior
           </button>
-          <span className="text-sm font-semibold text-slate-500">Página {currentPage}</span>
+          <span className="text-sm font-semibold text-slate-500">
+            {pageSize === 'all' ? 'Todos' : `Página ${currentPage}`}
+          </span>
           <button
-            onClick={() => setCurrentPage(p => p + 1)}
-            disabled={!hasMore || isLoadingList}
+            onClick={() => {
+              setPageSize(25);
+              setCurrentPage(p => p + 1);
+            }}
+            disabled={!hasMore || isLoadingList || pageSize === 'all'}
             className="px-4 py-2 rounded-lg font-bold bg-primary text-on-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Siguiente
