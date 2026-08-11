@@ -156,7 +156,7 @@ export const AppProvider = ({ children }) => {
 
     let query = supabase
       .from('productos')
-      .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,campo_personalizado_1,codigo_barras,categorias(nombre)', { count: 'estimated' })
+      .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,campo_personalizado_1,codigo_barras,categorias(nombre,descuento,fecha_inicio_descuento,fecha_fin_descuento)', { count: 'estimated' })
       .order('descuento', { ascending: false, nullsFirst: false })
       .order('nombre', { ascending: true });
 
@@ -187,7 +187,21 @@ export const AppProvider = ({ children }) => {
     }
 
     const items = (data || []).map(p => {
-      const desc = Number(p.descuento) || 0;
+      let desc = Number(p.descuento) || 0;
+      
+      const catDesc = Number(p.categorias?.descuento) || 0;
+      if (catDesc > 0) {
+        const now = new Date();
+        const start = p.categorias?.fecha_inicio_descuento ? new Date(p.categorias.fecha_inicio_descuento) : null;
+        const end = p.categorias?.fecha_fin_descuento ? new Date(p.categorias.fecha_fin_descuento) : null;
+        
+        if (start && end && now >= start && now <= end) {
+          if (catDesc > desc) {
+            desc = catDesc;
+          }
+        }
+      }
+
       const basePrice = Number(p.precio) || 0;
       const activePrice = desc > 0 ? basePrice * (1 - desc / 100) : basePrice;
       return {
@@ -225,7 +239,7 @@ export const AppProvider = ({ children }) => {
     for (const key of keysToTry) {
       const { data, error } = await supabase
         .from('productos')
-        .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,campo_personalizado_1,codigo_barras,categorias(nombre)')
+        .select('codigo_producto,nombre,precio,cantidad_disponible,foto_url,descuento,unidad,campo_personalizado_1,codigo_barras,categorias(nombre,descuento,fecha_inicio_descuento,fecha_fin_descuento)')
         .eq('codigo_producto', key)
         .maybeSingle();
 
@@ -235,7 +249,21 @@ export const AppProvider = ({ children }) => {
       }
 
       if (data) {
-        const desc = Number(data.descuento) || 0;
+        let desc = Number(data.descuento) || 0;
+        
+        const catDesc = Number(data.categorias?.descuento) || 0;
+        if (catDesc > 0) {
+          const now = new Date();
+          const start = data.categorias?.fecha_inicio_descuento ? new Date(data.categorias.fecha_inicio_descuento) : null;
+          const end = data.categorias?.fecha_fin_descuento ? new Date(data.categorias.fecha_fin_descuento) : null;
+          
+          if (start && end && now >= start && now <= end) {
+            if (catDesc > desc) {
+              desc = catDesc;
+            }
+          }
+        }
+
         const basePrice = Number(data.precio) || 0;
         const activePrice = desc > 0 ? basePrice * (1 - desc / 100) : basePrice;
         const mapped = {

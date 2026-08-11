@@ -12,12 +12,29 @@ export default function CategoriesManager() {
   const [editName, setEditName] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [previewImage, setPreviewImage] = useState('');
+  const [discount, setDiscount] = useState('');
+  const [discountStart, setDiscountStart] = useState('');
+  const [discountEnd, setDiscountEnd] = useState('');
   const fileInputRef = useRef(null);
 
   const handleEditClick = (cat) => {
     setSelectedCategory(cat);
     setEditName(cat.nombre || '');
     setPreviewImage(cat.foto_url || '');
+    setDiscount(cat.descuento || '');
+    
+    const formatForInput = (dateStr) => {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      // Ajustar a zona horaria local para el input datetime-local
+      const offset = d.getTimezoneOffset() * 60000;
+      const localISOTime = (new Date(d.getTime() - offset)).toISOString().slice(0, 16);
+      return localISOTime;
+    };
+    
+    setDiscountStart(formatForInput(cat.fecha_inicio_descuento));
+    setDiscountEnd(formatForInput(cat.fecha_fin_descuento));
+    
     setImageFile(null);
     setIsModalOpen(true);
   };
@@ -62,6 +79,29 @@ export default function CategoriesManager() {
         updateData.nombre = editName.trim();
       }
 
+      const parsedDiscount = Number(discount);
+      if (!isNaN(parsedDiscount) && parsedDiscount !== Number(selectedCategory.descuento || 0)) {
+        updateData.descuento = parsedDiscount;
+      }
+
+      const getUtcIso = (localStr) => {
+        if (!localStr) return null;
+        const d = new Date(localStr);
+        return d.toISOString();
+      };
+      
+      const newStart = getUtcIso(discountStart);
+      const oldStart = selectedCategory.fecha_inicio_descuento ? new Date(selectedCategory.fecha_inicio_descuento).toISOString() : null;
+      if (newStart !== oldStart) {
+        updateData.fecha_inicio_descuento = newStart;
+      }
+
+      const newEnd = getUtcIso(discountEnd);
+      const oldEnd = selectedCategory.fecha_fin_descuento ? new Date(selectedCategory.fecha_fin_descuento).toISOString() : null;
+      if (newEnd !== oldEnd) {
+        updateData.fecha_fin_descuento = newEnd;
+      }
+
       if (Object.keys(updateData).length > 0) {
         await updateCategory(selectedCategory.codigo_categoria, updateData);
       }
@@ -95,6 +135,11 @@ export default function CategoriesManager() {
               )}
             </div>
             <h3 className="font-bold text-slate-800 mb-2 text-center">{cat.nombre}</h3>
+            {Number(cat.descuento) > 0 && (
+              <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-full mb-3">
+                -{cat.descuento}% Dto
+              </span>
+            )}
             <button 
               onClick={() => handleEditClick(cat)}
               className="mt-auto flex items-center gap-2 text-sm font-bold text-primary hover:text-primary-dark transition-colors"
@@ -132,6 +177,43 @@ export default function CategoriesManager() {
                     placeholder="Nombre de la categoría"
                     className="w-full p-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-medium text-slate-800"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">Descuento (%)</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      max="100"
+                      value={discount}
+                      onChange={(e) => setDiscount(e.target.value)}
+                      placeholder="0"
+                      className="w-full p-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-medium text-slate-800"
+                    />
+                  </div>
+                  {Number(discount) > 0 && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Inicio Descuento</label>
+                        <input 
+                          type="datetime-local" 
+                          value={discountStart}
+                          onChange={(e) => setDiscountStart(e.target.value)}
+                          className="w-full p-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-medium text-slate-800 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Fin Descuento</label>
+                        <input 
+                          type="datetime-local" 
+                          value={discountEnd}
+                          onChange={(e) => setDiscountEnd(e.target.value)}
+                          className="w-full p-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-medium text-slate-800 text-sm"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div>

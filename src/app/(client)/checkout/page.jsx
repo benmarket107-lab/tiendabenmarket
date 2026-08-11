@@ -7,6 +7,12 @@ import { useAuth } from '../../../context/AuthContext';
 import { useAppContext } from '../../../context/AppContext';
 import { ArrowLeft, ShoppingBag, MapPin, Phone, User, Link2, Truck, Store } from 'lucide-react';
 import { formatCurrency } from '../../../utils/currency';
+import dynamic from 'next/dynamic';
+
+const LocationPicker = dynamic(() => import('../../../components/LocationPicker'), {
+  ssr: false,
+  loading: () => <div className="h-[250px] bg-slate-100 animate-pulse rounded-xl border border-slate-200 flex items-center justify-center text-slate-400">Cargando mapa...</div>
+});
 
 export default function CheckoutPage() {
   const { cart, total, clearCart, shippingMethod, setShippingMethod } = useCart();
@@ -330,20 +336,11 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Link2 className="w-3.5 h-3.5 inline mr-1 text-slate-500" />
-                    Link de Google Maps <span className="text-slate-400 font-normal text-xs">(opcional, para mayor precisión)</span>
-                  </label>
-                  <input
-                    type="url"
-                    name="google_maps"
-                    className="input-field"
-                    placeholder="Ej: https://maps.app.goo.gl/..."
+                <div className="pt-2">
+                  <LocationPicker 
                     value={formData.google_maps}
-                    onChange={handleChange}
+                    onChange={(val) => setFormData(prev => ({ ...prev, google_maps: val }))}
                   />
-                  <p className="text-xs text-slate-400 mt-1">Abrí Google Maps, buscá tu ubicación, presioná "Compartir" y pegá el link aquí.</p>
                 </div>
               </>
             ) : (
