@@ -13,11 +13,36 @@ export default function ClientLayout({ children }) {
       <footer className="bg-[rgb(47,47,47)] pt-6 sm:pt-8 pb-24 sm:pb-8 px-6 md:px-12 border-t border-white/10 text-white">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-8 text-center sm:text-left">
           <div className="col-span-1 sm:col-span-2 md:col-span-1 flex flex-col items-center sm:items-start">
-            <img 
-              src="/logo.webp" 
-              alt="Logo Benmarket" 
-              className="h-12 w-auto object-contain object-center sm:object-left mb-3 sm:mb-3"
-            />
+            <div className="flex items-center gap-3 mb-3 flex-wrap justify-center sm:justify-start">
+              <img 
+                src="/logo.webp" 
+                alt="Logo Benmarket" 
+                className="h-10 w-auto object-contain"
+              />
+              <span className="text-white/20 text-xl font-thin select-none">|</span>
+              <img 
+                src="/logo-garage-nobg.webp" 
+                alt="Logo Garage" 
+                className="h-14 w-auto object-contain opacity-90"
+              />
+              <span className="text-white/20 text-xl font-thin select-none">|</span>
+              <div className="flex flex-col items-center gap-0.5">
+                <img 
+                  src="/logo-eben-nobg.png" 
+                  alt="Logo Eben" 
+                  className="h-14 w-auto object-contain"
+                />
+                <span
+                  className="text-[8px] font-bold tracking-widest uppercase"
+                  style={{
+                    color: '#00BCD4',
+                    animation: 'ebenGlow 1.4s ease-in-out infinite',
+                  }}
+                >
+                  PRÓXIMAMENTE!!
+                </span>
+              </div>
+            </div>
             <p className="text-white/70 text-xs sm:text-sm leading-relaxed font-medium mb-4 max-w-[280px] sm:max-w-none">Av. Julio Cesar Riquelme, km 7 Barrio Ciudad Nueva, Ciudad del Este 7000</p>
             <div className="flex gap-5 sm:gap-4 justify-center sm:justify-start">
               <a href="https://www.instagram.com/benmarket24/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-white/70 hover:text-primary hover:scale-110 transition-all p-2 sm:p-0">

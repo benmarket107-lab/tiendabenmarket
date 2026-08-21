@@ -231,13 +231,38 @@ export default function Navbar() {
         )}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 sm:h-28 items-center gap-2 sm:gap-6">
-            <Link href="/" className="flex items-center group shrink-0">
-                <img 
-                  src="/logo.webp" 
-                alt="Logo Benmarket" 
-                className="h-12 sm:h-24 w-auto sm:w-[280px] object-contain object-left group-hover:scale-105 transition-transform"
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <Link href="/" className="flex items-center shrink-0">
+                  <img 
+                    src="/logo.webp" 
+                  alt="Logo Benmarket" 
+                  className="h-12 sm:h-24 w-auto sm:w-[280px] object-contain object-left hover:scale-105 transition-transform"
+                />
+              </Link>
+              <span className="hidden sm:block text-white/20 text-2xl font-thin select-none">|</span>
+              <img 
+                src="/logo-garage-nobg.webp" 
+                alt="Logo Garage" 
+                className="hidden sm:block h-11 sm:h-16 w-auto object-contain opacity-60 hover:opacity-100 hover:scale-105 transition-all duration-200 cursor-pointer"
               />
-            </Link>
+              <span className="hidden sm:block text-white/20 text-2xl font-thin select-none">|</span>
+              <div className="hidden sm:flex flex-col items-center gap-0.5">
+                <img 
+                  src="/logo-eben-nobg.png" 
+                  alt="Logo Eben" 
+                  className="h-11 sm:h-14 w-auto object-contain opacity-60 hover:opacity-100 hover:scale-105 transition-all duration-200 cursor-pointer"
+                />
+                <span
+                  className="text-[9px] font-bold tracking-widest uppercase"
+                  style={{
+                    color: '#00BCD4',
+                    animation: 'ebenGlow 1.4s ease-in-out infinite',
+                  }}
+                >
+                  PRÓXIMAMENTE!!
+                </span>
+              </div>
+            </div>
 
             {/* Buscador Integrado en el Header (Solo visible en Desktop) */}
             {(!user || user.role === 'Cliente') && (
