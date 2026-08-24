@@ -175,7 +175,7 @@ export default function BannersManager() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Imagen del Banner (1920x800px recomendado)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Imagen o Video (Enlace de YouTube/TikTok o Subir Imagen)</label>
                 <div className="flex flex-col gap-3">
                   <div className="w-full h-32 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center relative hover:bg-slate-100 transition-colors">
                     {formData.image ? (
@@ -222,7 +222,7 @@ export default function BannersManager() {
                     <input 
                       type="url" 
                       className="input-field" 
-                      placeholder="Pega la URL de la imagen si ya está subida"
+                      placeholder="Pega la URL de la imagen, o el enlace de YouTube/TikTok"
                       value={formData.image && !imageFile ? formData.image : ''} 
                       onChange={e => {
                         setImageFile(null);

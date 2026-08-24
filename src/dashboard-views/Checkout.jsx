@@ -115,7 +115,14 @@ export default function Checkout() {
       window.location.href = whatsappUrl;
     } catch (err) {
       console.error("Error creating order:", err);
-      alert("Hubo un error al procesar tu pedido en el sistema. De todos modos podés enviarlo manualmente por WhatsApp.");
+      
+      if (err.message && err.message.includes('Stock insuficiente')) {
+        alert(`❌ Atención: ${err.message}. Por favor revisá tu carrito e intentá nuevamente.`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      alert("Hubo un error al guardar tu pedido en el sistema. De todos modos podés enviarlo manualmente por WhatsApp.");
       
       // Fallback
       const message = buildWhatsAppMessage();
@@ -124,7 +131,6 @@ export default function Checkout() {
       const whatsappUrl = `https://wa.me/${targetNumber}?text=${encodedMessage}`;
       
       setIsRedirecting(true);
-      clearCart();
       window.location.href = whatsappUrl;
     } finally {
       setIsSubmitting(false);
