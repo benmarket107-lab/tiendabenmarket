@@ -220,14 +220,24 @@ export default function HomeClient() {
                           ></iframe>
                         )}
                         {isDirVideo && (
-                          <video
-                            className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none"
-                            src={banner.image}
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                          ></video>
+                          <>
+                            <video
+                              className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110"
+                              src={banner.image}
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                            ></video>
+                            <video
+                              className="absolute inset-0 w-full h-full object-contain object-center z-10 pointer-events-none"
+                              src={banner.image}
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                            ></video>
+                          </>
                         )}
                       </>
                     ) : (
