@@ -35,7 +35,7 @@ const getCategoryIcon = (cat) => {
   return <ShoppingBag size={20} />;
 };
 
-import { getYouTubeId, getTikTokId } from '../../utils/videoParsers';
+import { getYouTubeId, getTikTokId, isDirectVideo } from '../../utils/videoParsers';
 
 export default function HomeClient() {
   const { categories, rawCategories, globalSearchQuery, setGlobalSearchQuery, banners, bannersReady, fetchProductsPage } = useAppContext();
@@ -194,7 +194,8 @@ export default function HomeClient() {
               {slides.map((banner, index) => {
                 const ytId = getYouTubeId(banner.image);
                 const tkId = getTikTokId(banner.image);
-                const isVideo = ytId || tkId;
+                const isDirVideo = isDirectVideo(banner.image);
+                const isVideo = ytId || tkId || isDirVideo;
 
                 return (
                   <div key={`${banner.id}-${index}`} className="w-full h-full shrink-0 relative bg-slate-900 overflow-hidden flex items-center justify-center">
@@ -217,6 +218,16 @@ export default function HomeClient() {
                             allow="autoplay; encrypted-media;"
                             allowFullScreen
                           ></iframe>
+                        )}
+                        {isDirVideo && (
+                          <video
+                            className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none"
+                            src={banner.image}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                          ></video>
                         )}
                       </>
                     ) : (

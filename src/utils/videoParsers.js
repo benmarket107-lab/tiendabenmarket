@@ -12,3 +12,13 @@ export const getTikTokId = (url) => {
   const match = url.match(regExp);
   return match ? (match[1] || match[2]) : null;
 };
+
+export const isDirectVideo = (url) => {
+  if (!url) return false;
+  try {
+    const urlObj = new URL(url);
+    return /\.(mp4|webm|ogg|mov)$/i.test(urlObj.pathname);
+  } catch (e) {
+    return /\.(mp4|webm|ogg|mov)$/i.test(url);
+  }
+};
