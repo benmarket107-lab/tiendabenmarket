@@ -3,7 +3,7 @@ import { Plus, Trash2, Image as ImageIcon, CheckCircle, XCircle, Info, Upload, X
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../supabaseClient';
 import { compressImage } from '../utils/imageCompression';
-
+import { getYouTubeId, getTikTokId } from '../utils/videoParsers';
 export default function BannersManager() {
   const { banners, addBanner, updateBannerStatus, deleteBanner } = useAppContext();
 
@@ -109,10 +109,21 @@ export default function BannersManager() {
             <p className="text-slate-500 font-medium">No hay banners configurados.</p>
           </div>
         ) : (
-          banners.map(banner => (
+          banners.map(banner => {
+            const ytId = getYouTubeId(banner.image);
+            const tkId = getTikTokId(banner.image);
+            return (
             <div key={banner.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
               <div className="h-40 bg-slate-100 relative group">
-                <img src={banner.image} alt={banner.name} className="w-full h-full object-cover" />
+                {ytId ? (
+                  <img src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`} alt={banner.name} className="w-full h-full object-cover" />
+                ) : tkId ? (
+                  <div className="w-full h-full bg-black flex items-center justify-center">
+                    <span className="text-white font-bold">Video de TikTok</span>
+                  </div>
+                ) : (
+                  <img src={banner.image} alt={banner.name} className="w-full h-full object-cover" />
+                )}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                   <button 
                     onClick={() => handleDelete(banner.id)}
@@ -148,7 +159,7 @@ export default function BannersManager() {
                 </button>
               </div>
             </div>
-          ))
+          )})
         )}
       </div>
 
@@ -180,7 +191,13 @@ export default function BannersManager() {
                   <div className="w-full h-32 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center relative hover:bg-slate-100 transition-colors">
                     {formData.image ? (
                       <>
-                        <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                        {(() => {
+                           const ytIdPreview = getYouTubeId(formData.image);
+                           const tkIdPreview = getTikTokId(formData.image);
+                           if (ytIdPreview) return <img src={`https://img.youtube.com/vi/${ytIdPreview}/hqdefault.jpg`} alt="Preview" className="w-full h-full object-cover" />;
+                           if (tkIdPreview) return <div className="w-full h-full bg-black flex items-center justify-center"><span className="text-white font-bold">Video de TikTok</span></div>;
+                           return <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />;
+                        })()}
                         <button 
                           type="button" 
                           onClick={() => {

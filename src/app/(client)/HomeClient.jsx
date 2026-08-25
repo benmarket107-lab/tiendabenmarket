@@ -35,19 +35,7 @@ const getCategoryIcon = (cat) => {
   return <ShoppingBag size={20} />;
 };
 
-const getYouTubeId = (url) => {
-  if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
-};
-
-const getTikTokId = (url) => {
-  if (!url) return null;
-  const regExp = /tiktok\.com\/(?:@[\w.-]+\/video\/(\d+)|v\/(\d+))/i;
-  const match = url.match(regExp);
-  return match ? (match[1] || match[2]) : null;
-};
+import { getYouTubeId, getTikTokId } from '../../utils/videoParsers';
 
 export default function HomeClient() {
   const { categories, rawCategories, globalSearchQuery, setGlobalSearchQuery, banners, bannersReady, fetchProductsPage } = useAppContext();
