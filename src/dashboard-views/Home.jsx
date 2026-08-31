@@ -130,17 +130,20 @@ export default function Home() {
       setIsLoadingProducts(true);
 
       try {
-        const categoryCode =
-          selectedCategory === 'Productos Recomendados'
-            ? null
-            : rawCategories?.find(c => c.nombre === selectedCategory)?.codigo_categoria ?? null;
+        // Si hay búsqueda activa, ignorar la categoría y buscar globalmente
+        const isSearching = debouncedQuery.trim().length > 0;
+        const categoryCode = isSearching
+          ? null
+          : selectedCategory === 'Productos Recomendados'
+          ? null
+          : rawCategories?.find(c => c.nombre === selectedCategory)?.codigo_categoria ?? null;
 
         const { items, hasMore: nextHasMore } = await fetchProductsPage({
           page: currentPage,
           pageSize: 24,
           categoryCode,
           searchQuery: debouncedQuery,
-          isRecommendedFilter: selectedCategory === 'Productos Recomendados',
+          isRecommendedFilter: !isSearching && selectedCategory === 'Productos Recomendados',
         });
 
         if (cancelled) return;

@@ -215,6 +215,19 @@ export default function ProductDetailsPage() {
             </button>
           </div>
 
+          {/* Promociones Bancarias */}
+          <div className="mt-2 mb-2 rounded-2xl border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 p-4 flex items-center gap-4 shadow-sm">
+            <div className="flex flex-col flex-1 min-w-0">
+              <span className="text-[11px] font-black uppercase tracking-widest text-orange-500 mb-0.5">🏦 Nuestras Promociones Bancarias</span>
+              <span className="text-slate-800 font-black text-base leading-tight">Hasta 10 cuotas sin intereses</span>
+            </div>
+            <img
+              src="/itau-promo.jpg"
+              alt="Promoción Itaú - Con tarjetas de crédito"
+              className="h-14 w-auto object-contain rounded-lg shrink-0 shadow-sm"
+            />
+          </div>
+
           {/* Beneficios */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-6 border-t border-slate-200 mt-auto">
             <div className="flex items-center gap-4 text-slate-700">

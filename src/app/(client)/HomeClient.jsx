@@ -44,7 +44,6 @@ export default function HomeClient() {
   const [products, setProducts] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
-  const [debouncedQuery, setDebouncedQuery] = useState(globalSearchQuery);
   const gridRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
@@ -62,10 +61,6 @@ export default function HomeClient() {
 
 
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedQuery(globalSearchQuery), 250);
-    return () => clearTimeout(t);
-  }, [globalSearchQuery]);
 
   const activeBanners = banners.filter(b => b.active);
   const slides = activeBanners.length > 1 ? [...activeBanners, activeBanners[0]] : activeBanners;
@@ -129,17 +124,20 @@ export default function HomeClient() {
       setIsLoadingProducts(true);
 
       try {
-        const categoryCode =
-          selectedCategory === 'Productos Recomendados'
-            ? null
-            : rawCategories?.find(c => c.nombre === selectedCategory)?.codigo_categoria || null;
+        // Si hay búsqueda activa, ignorar la categoría y buscar globalmente
+        const isSearching = globalSearchQuery.trim().length > 0;
+        const categoryCode = isSearching
+          ? null
+          : selectedCategory === 'Productos Recomendados'
+          ? null
+          : rawCategories?.find(c => c.nombre === selectedCategory)?.codigo_categoria || null;
 
         const { items, hasMore: nextHasMore } = await fetchProductsPage({
           page: currentPage,
           pageSize: 24,
           categoryCode,
-          searchQuery: debouncedQuery,
-          isRecommendedFilter: selectedCategory === 'Productos Recomendados',
+          searchQuery: globalSearchQuery,
+          isRecommendedFilter: !isSearching && selectedCategory === 'Productos Recomendados',
         });
 
         if (cancelled) return;
@@ -161,7 +159,7 @@ export default function HomeClient() {
     return () => {
       cancelled = true;
     };
-  }, [fetchProductsPage, rawCategories, selectedCategory, debouncedQuery, currentPage]);
+  }, [fetchProductsPage, rawCategories, selectedCategory, globalSearchQuery, currentPage]);
 
   return (
     <div className="w-full bg-surface">

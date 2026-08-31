@@ -168,7 +168,7 @@ export const AppProvider = ({ children }) => {
       query = query.eq('campo_personalizado_1', 'true');
     }
 
-    const q = String(searchQuery || '').trim();
+    const q = String(searchQuery || '').trim().toLowerCase();
     if (q) {
       query = query.or(`nombre.ilike.%${q}%,codigo_barras.ilike.%${q}%`);
     }

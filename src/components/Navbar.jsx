@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { ShoppingCart, LogOut, Store, ShieldCheck, Calculator, Wallet, UserCircle, Search, User, Heart, Menu, X, Home, Bell, Volume2, VolumeX, Package } from 'lucide-react';
@@ -21,6 +21,7 @@ export default function Navbar() {
   const navigate = (path) => router.push(path);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [localSearch, setLocalSearch] = useState(globalSearchQuery || '');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
   const [pendingToast, setPendingToast] = useState(null);
@@ -46,12 +47,27 @@ export default function Navbar() {
     navigate('/login');
   };
 
+  const searchDebounceRef = useRef(null);
+
   const handleSearchChange = (e) => {
     const query = e.target.value;
-    setGlobalSearchQuery(query);
-    if (location.pathname !== '/') {
-      navigate('/');
-    }
+    // Actualiza visualmente de inmediato
+    setLocalSearch(query);
+    // Debounce: espera 300ms antes de aplicar la búsqueda global
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setGlobalSearchQuery(query);
+      if (query.trim() && location.pathname !== '/') {
+        navigate('/');
+      }
+    }, 300);
+  };
+
+  const handleLogoClick = () => {
+    // Limpia la búsqueda al ir al home
+    setLocalSearch('');
+    setGlobalSearchQuery('');
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
   };
 
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
@@ -232,7 +248,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 sm:h-28 items-center gap-2 sm:gap-6">
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              <Link href="/" className="flex items-center shrink-0">
+              <Link href="/" className="flex items-center shrink-0" onClick={handleLogoClick}>
                   <img 
                     src="/logo.webp" 
                   alt="Logo Benmarket" 
@@ -264,22 +280,36 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Buscador Integrado en el Header (Solo visible en Desktop) */}
-            {(!user || user.role === 'Cliente') && (
-              <div className="hidden md:flex flex-1 max-w-xl relative group mx-6">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors z-10">
-                  <Search className="w-5 h-5" strokeWidth={2.5} />
-                </div>
-                <input 
-                  className="w-full bg-white border border-slate-200 py-2.5 pl-11 pr-4 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 text-slate-800 shadow-sm text-base font-medium outline-none" 
-                  placeholder="Buscar productos" 
-                  type="text"
-                  value={globalSearchQuery}
-                  onChange={handleSearchChange}
-                  aria-label="Buscar productos"
-                />
+            {/* Buscador Integrado en el Header - Visible para todos los roles */}
+            <div className="hidden md:flex flex-1 max-w-xl relative group mx-6">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors z-10">
+                <Search className="w-5 h-5" strokeWidth={2.5} />
               </div>
-            )}
+              <input 
+                className="w-full bg-white border border-slate-200 py-2.5 pl-11 pr-10 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 text-slate-800 shadow-sm text-base font-medium outline-none" 
+                placeholder="Buscar productos..." 
+                type="text"
+                value={localSearch}
+                onChange={handleSearchChange}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                    setGlobalSearchQuery(localSearch);
+                    if (localSearch.trim() && location.pathname !== '/') navigate('/');
+                  }
+                }}
+                aria-label="Buscar productos"
+              />
+              {localSearch && (
+                <button
+                  onClick={() => { setLocalSearch(''); setGlobalSearchQuery(''); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label="Limpiar búsqueda"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
             
             {/* Iconos Desktop */}
             <div className="hidden md:flex items-center gap-6 shrink-0">
@@ -305,62 +335,53 @@ export default function Navbar() {
                   )}
                 </Link>
 
-                <div className="flex items-center gap-5 border-l border-white/20 pl-6 ml-2">
-                  <div className="flex items-center gap-3 bg-white/5 py-1.5 px-3 rounded-full border border-white/10">
+                <div className="flex items-center gap-3 border-l border-white/20 pl-4 ml-2">
+                  {/* Avatar compacto con indicador de sesión activa */}
+                  <div className="relative" title={`${user.name} · ${user.role}`}>
                     {user.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover border-2 border-primary" />
+                      <img src={user.avatar} alt={user.name} className="w-9 h-9 rounded-full object-cover border-2 border-emerald-400 shadow-lg shadow-emerald-500/20" />
                     ) : (
-                      getRoleIcon()
+                      <div className="w-9 h-9 rounded-full bg-white/10 border-2 border-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                        <UserCircle className="w-5 h-5 text-white" />
+                      </div>
                     )}
-                    <div className="hidden sm:flex flex-col pr-2">
-                      <span className="text-sm font-bold leading-tight text-white">{user.name}</span>
-                      <span className="text-[10px] text-white/70 font-mono font-bold uppercase tracking-wider leading-none">{user.role}</span>
-                    </div>
+                    {/* Punto verde de sesión activa */}
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-[rgb(47,47,47)] rounded-full shadow-sm" />
                   </div>
-                  <button onClick={handleLogout} className="p-2.5 hover:bg-error hover:text-white text-white/70 rounded-xl transition-colors group" title="Cerrar sesión">
-                    <LogOut className="w-5 h-5 group-hover:text-white" />
+                  <button onClick={handleLogout} className="p-2 hover:bg-error/20 hover:text-red-400 text-white/50 rounded-xl transition-colors group" title="Cerrar sesión">
+                    <LogOut className="w-4 h-4 group-hover:text-red-400" />
                   </button>
                 </div>
               </>
             ) : user ? (
-              <div className="flex items-center gap-5 border-l border-white/20 pl-6 ml-2">
-                <div className="flex items-center gap-3 bg-white/5 py-1.5 px-3 rounded-full border border-white/10">
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover border-2 border-primary" />
-                  ) : (
-                    getRoleIcon()
-                  )}
-                  <div className="hidden sm:flex flex-col pr-2">
-                    <span className="text-sm font-bold leading-tight text-white">{user.name}</span>
-                    <span className="text-[10px] text-white/70 font-mono font-bold uppercase tracking-wider leading-none">{user.role}</span>
-                  </div>
-                </div>
-                
+              <div className="flex items-center gap-3 border-l border-white/20 pl-4 ml-2">
+
+                {/* Botones de Admin/Cajero */}
                 {user.role !== 'Cliente' && (
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     {['Admin', 'Cajero'].includes(user.role) && (
                       <>
                         <button
                           onClick={toggleSound}
-                          className={`p-2.5 rounded-xl transition-all group flex items-center justify-center ${
+                          className={`p-2 rounded-xl transition-all group flex items-center justify-center ${
                             isSoundMuted ? 'text-white/60 hover:bg-white/10' : 'text-emerald-200 hover:bg-white/10'
                           }`}
                           title={isSoundMuted ? 'Activar sonido de pedidos' : 'Silenciar sonido de pedidos'}
                           aria-label={isSoundMuted ? 'Activar sonido de pedidos' : 'Silenciar sonido de pedidos'}
                         >
                           {isSoundMuted ? (
-                            <VolumeX className="w-5 h-5 transition-transform group-hover:scale-110" />
+                            <VolumeX className="w-4 h-4 transition-transform group-hover:scale-110" />
                           ) : (
-                            <Volume2 className="w-5 h-5 transition-transform group-hover:scale-110" />
+                            <Volume2 className="w-4 h-4 transition-transform group-hover:scale-110" />
                           )}
                         </button>
                         <button
                           onClick={() => navigate('/dashboard?filter=Pendiente')}
-                          className="relative p-2.5 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center"
+                          className="relative p-2 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center"
                           title="Pedidos pendientes"
                           aria-label="Pedidos pendientes"
                         >
-                          <Bell className="w-5 h-5 transition-transform group-hover:scale-110" />
+                          <Bell className="w-4 h-4 transition-transform group-hover:scale-110" />
                           {pendingOrdersCount > 0 && (
                             <span className="absolute -top-1 -right-1 bg-amber-400 text-amber-950 text-[10px] font-black rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center shadow-lg border-2 border-black">
                               {pendingOrdersCount > 99 ? '99+' : pendingOrdersCount}
@@ -369,14 +390,27 @@ export default function Navbar() {
                         </button>
                       </>
                     )}
-                    <Link href="/dashboard" className="text-sm font-semibold bg-primary text-white hover:bg-primary-container px-4 py-2.5 rounded-xl transition-colors shadow-sm">
+                    <Link href="/dashboard" className="text-xs font-semibold bg-primary text-white hover:bg-primary-container px-3 py-2 rounded-xl transition-colors shadow-sm">
                       Dashboard
                     </Link>
                   </div>
                 )}
-                
-                <button onClick={handleLogout} className="p-2.5 hover:bg-error hover:text-white text-white/70 rounded-xl transition-colors group" title="Cerrar sesión">
-                  <LogOut className="w-5 h-5 group-hover:text-white" />
+
+                {/* Avatar compacto con indicador de sesión activa */}
+                <div className="relative" title={`${user.name} · ${user.role}`}>
+                  {user.avatar ? (
+                    <img src={user.avatar} alt={user.name} className="w-9 h-9 rounded-full object-cover border-2 border-emerald-400 shadow-lg shadow-emerald-500/20" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-white/10 border-2 border-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                      {getRoleIcon()}
+                    </div>
+                  )}
+                  {/* Punto verde de sesión activa */}
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-[rgb(47,47,47)] rounded-full shadow-sm" />
+                </div>
+
+                <button onClick={handleLogout} className="p-2 hover:bg-error/20 hover:text-red-400 text-white/50 rounded-xl transition-colors group" title="Cerrar sesión">
+                  <LogOut className="w-4 h-4 group-hover:text-red-400" />
                 </button>
               </div>
             ) : (
@@ -460,15 +494,32 @@ export default function Navbar() {
                   <Search className="w-5 h-5" strokeWidth={2.5} />
                 </div>
                 <input 
-                  className="w-full bg-white border border-slate-200 py-3 pl-11 pr-4 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 text-slate-800 shadow-sm text-base font-medium outline-none" 
-                  placeholder="Buscar productos" 
+                  className="w-full bg-white border border-slate-200 py-3 pl-11 pr-10 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 text-slate-800 shadow-sm text-base font-medium outline-none" 
+                  placeholder="Buscar productos..." 
                   type="text"
-                  value={globalSearchQuery}
+                  value={localSearch}
                   onChange={(e) => {
                     handleSearchChange(e);
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                      setGlobalSearchQuery(localSearch);
+                      setIsMobileMenuOpen(false);
+                      if (localSearch.trim() && location.pathname !== '/') navigate('/');
+                    }
+                  }}
                   aria-label="Buscar productos"
                 />
+                {localSearch && (
+                  <button
+                    onClick={() => { setLocalSearch(''); setGlobalSearchQuery(''); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    aria-label="Limpiar búsqueda"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             )}
 
