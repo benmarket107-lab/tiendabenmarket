@@ -274,8 +274,9 @@ export default function Navbar() {
                   <Image
                     src="/logogarage.webp"
                     alt="Benmarket Garage"
-                    width={96}
-                    height={96}
+                    width={240}
+                    height={240}
+                    quality={100}
                     className="h-10 sm:h-24 w-auto object-contain rounded-xl"
                   />
                   <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[10px] font-semibold whitespace-nowrap px-2 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-50">
@@ -293,10 +294,11 @@ export default function Navbar() {
                   className="group relative flex flex-col items-center justify-center rounded-2xl transition-all duration-200 opacity-85 hover:opacity-100 hover:scale-110"
                 >
                   <Image
-                    src="/logoeben.webp"
+                    src="/logo-eben-nobg.png"
                     alt="e-ben marketplace"
-                    width={80}
-                    height={80}
+                    width={240}
+                    height={240}
+                    quality={100}
                     className="h-7 sm:h-20 w-auto object-contain neon-flash-img"
                   />
                   <span className="proximamente-flash text-[6px] sm:text-[10px] font-bold tracking-widest uppercase text-teal-300 leading-none -mt-2 sm:-mt-4">
