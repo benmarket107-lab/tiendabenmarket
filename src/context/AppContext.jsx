@@ -143,7 +143,7 @@ export const AppProvider = ({ children }) => {
     fetchData();
   }, []);
 
-  const fetchProductsPage = async ({
+  const fetchProductsPage = useCallback(async ({
     page = 1,
     pageSize = 24,
     categoryCode = null,
@@ -183,6 +183,7 @@ export const AppProvider = ({ children }) => {
 
     const { data, error, count } = await query.range(from, to);
     if (error) {
+      console.error('Error fetching products:', error);
       throw error;
     }
 
@@ -219,10 +220,17 @@ export const AppProvider = ({ children }) => {
       };
     });
 
+    // Guardar en ref silenciosamente para navegación instantánea sin disparar re-render
+    for (const item of items) {
+      if (item.id) {
+        productByIdRef.current[item.id] = item;
+      }
+    }
+
     const hasMore = typeof count === 'number' ? to + 1 < count : items.length === pageSize;
 
     return { items, hasMore, total: count };
-  };
+  }, []);
 
   const getProductById = useCallback(async (id, forceRefresh = true) => {
     if (!id) return null;

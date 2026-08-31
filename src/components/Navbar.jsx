@@ -9,6 +9,7 @@ import { useCart } from '../context/CartContext';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../supabaseClient';
 import { useFavorites } from '../context/FavoritesContext';
+import Image from 'next/image';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -249,10 +250,13 @@ export default function Navbar() {
           <div className="flex justify-between h-20 sm:h-28 items-center gap-2 sm:gap-6">
             <div className="flex items-center gap-0 shrink-0">
               <Link href="/" className="flex items-center group shrink-0" onClick={handleLogoClick}>
-                <img 
+                <Image 
                   src="/logo.webp" 
-                  alt="Logo Benmarket" 
-                  className="h-12 sm:h-24 w-auto sm:w-[280px] object-contain object-left group-hover:scale-105 transition-transform duration-200"
+                  alt="Logo Benmarket"
+                  width={140}
+                  height={48}
+                  priority
+                  className="h-7 sm:h-12 w-auto object-contain object-left group-hover:scale-105 transition-transform duration-200"
                 />
               </Link>
 
@@ -267,9 +271,11 @@ export default function Navbar() {
                   title="Benmarket Garage"
                   className="group relative flex items-center justify-center rounded-2xl transition-all duration-200 opacity-85 hover:opacity-100 hover:scale-110"
                 >
-                  <img
+                  <Image
                     src="/logogarage.webp"
                     alt="Benmarket Garage"
+                    width={96}
+                    height={96}
                     className="h-10 sm:h-24 w-auto object-contain rounded-xl"
                   />
                   <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[10px] font-semibold whitespace-nowrap px-2 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-50">
@@ -286,9 +292,11 @@ export default function Navbar() {
                   title="e-ben marketplace"
                   className="group relative flex flex-col items-center justify-center rounded-2xl transition-all duration-200 opacity-85 hover:opacity-100 hover:scale-110"
                 >
-                  <img
+                  <Image
                     src="/logoeben.webp"
                     alt="e-ben marketplace"
+                    width={80}
+                    height={80}
                     className="h-7 sm:h-20 w-auto object-contain neon-flash-img"
                   />
                   <span className="proximamente-flash text-[6px] sm:text-[10px] font-bold tracking-widest uppercase text-teal-300 leading-none -mt-2 sm:-mt-4">

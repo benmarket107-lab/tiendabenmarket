@@ -2,6 +2,7 @@ import Navbar from '../../components/Navbar';
 import BottomNavigation from '../../components/BottomNavigation';
 import { Instagram, Facebook, Phone } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function ClientLayout({ children }) {
   return (
@@ -15,10 +16,12 @@ export default function ClientLayout({ children }) {
           <div className="col-span-1 sm:col-span-2 md:col-span-1 flex flex-col items-center sm:items-start">
             {/* Logo principal + logos del grupo */}
             <div className="flex items-center gap-0 mb-3">
-              <img 
+              <Image 
                 src="/logo.webp" 
                 alt="Logo Benmarket" 
-                className="h-12 w-auto object-contain object-center sm:object-left"
+                width={130}
+                height={36}
+                className="h-9 w-auto object-contain object-center sm:object-left"
               />
 
               {/* Separador */}
@@ -32,9 +35,11 @@ export default function ClientLayout({ children }) {
                   title="Benmarket Garage"
                   className="group relative flex items-center justify-center rounded-2xl transition-all duration-200 opacity-75 hover:opacity-100 hover:scale-110"
                 >
-                  <img
+                  <Image
                     src="/logogarage.webp"
                     alt="Benmarket Garage"
+                    width={40}
+                    height={40}
                     className="h-10 w-auto object-contain rounded-xl"
                   />
                   <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[10px] font-semibold whitespace-nowrap px-2 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-50">
@@ -51,9 +56,11 @@ export default function ClientLayout({ children }) {
                   title="e-ben marketplace"
                   className="group relative flex flex-col items-center justify-center rounded-2xl transition-all duration-200 opacity-75 hover:opacity-100 hover:scale-110"
                 >
-                  <img
+                  <Image
                     src="/logoeben.webp"
                     alt="e-ben marketplace"
+                    width={36}
+                    height={36}
                     className="h-9 w-auto object-contain neon-flash-img"
                   />
                   <span className="proximamente-flash text-[8px] font-bold tracking-widest uppercase text-teal-300 leading-none -mt-3">

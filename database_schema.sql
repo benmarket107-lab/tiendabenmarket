@@ -43,9 +43,11 @@ ALTER TABLE public.categorias ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.productos ENABLE ROW LEVEL SECURITY;
 
 -- Políticas de acceso para Categorías
+DROP POLICY IF EXISTS "Categorias legibles por todos" ON public.categorias;
 CREATE POLICY "Categorias legibles por todos" ON public.categorias
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Categorias modificables por administradores" ON public.categorias;
 CREATE POLICY "Categorias modificables por administradores" ON public.categorias
     FOR ALL USING (
         EXISTS (
@@ -60,9 +62,11 @@ CREATE POLICY "Categorias modificables por administradores" ON public.categorias
     );
 
 -- Políticas de acceso para Productos
+DROP POLICY IF EXISTS "Productos legibles por todos" ON public.productos;
 CREATE POLICY "Productos legibles por todos" ON public.productos
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Productos modificables por administradores" ON public.productos;
 CREATE POLICY "Productos modificables por administradores" ON public.productos
     FOR ALL USING (
         EXISTS (
@@ -140,10 +144,13 @@ CREATE TABLE IF NOT EXISTS public.configuracion (
 ALTER TABLE public.configuracion ENABLE ROW LEVEL SECURITY;
 
 -- Lectura pública (el checkout necesita leer el precio de delivery)
+-- Lectura pública (el checkout necesita leer el precio de delivery)
+DROP POLICY IF EXISTS "Configuracion lectura publica" ON public.configuracion;
 CREATE POLICY "Configuracion lectura publica" ON public.configuracion
     FOR SELECT USING (true);
 
 -- Solo personal autorizado puede modificar la configuracion
+DROP POLICY IF EXISTS "Configuracion modificable por administradores" ON public.configuracion;
 CREATE POLICY "Configuracion modificable por administradores" ON public.configuracion
     FOR ALL USING (
         EXISTS (
@@ -183,9 +190,11 @@ CREATE TABLE IF NOT EXISTS public.banners (
 ALTER TABLE public.banners ENABLE ROW LEVEL SECURITY;
 
 -- Políticas de acceso para Banners
+DROP POLICY IF EXISTS "Banners legibles por todos" ON public.banners;
 CREATE POLICY "Banners legibles por todos" ON public.banners
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Banners modificables por administradores" ON public.banners;
 CREATE POLICY "Banners modificables por administradores" ON public.banners
     FOR ALL USING (
         EXISTS (
@@ -214,26 +223,6 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('banners', 'banners', true)
 ON CONFLICT (id) DO NOTHING;
 
--- 2. Permitir que CUALQUIERA pueda ver y descargar las imágenes del bucket 'banners'
-CREATE POLICY "Imágenes de banners son públicas"
-  ON storage.objects FOR SELECT
-  USING ( bucket_id = 'banners' );
-
--- 3. Permitir subir/insertar imágenes al bucket 'banners'
-CREATE POLICY "Permitir subir imágenes a banners"
-  ON storage.objects FOR INSERT
-  WITH CHECK ( bucket_id = 'banners' );
-
--- 4. Permitir actualizar imágenes en el bucket 'banners'
-CREATE POLICY "Permitir actualizar imágenes en banners"
-  ON storage.objects FOR UPDATE
-  USING ( bucket_id = 'banners' );
-
--- 5. Permitir borrar imágenes del bucket 'banners'
-CREATE POLICY "Permitir borrar imágenes en banners"
-  ON storage.objects FOR DELETE
-  USING ( bucket_id = 'banners' );
-
 -- ==========================================
 -- TABLA DE USUARIOS Y AUTENTICACIÓN (PERFILES)
 -- ==========================================
@@ -253,23 +242,9 @@ CREATE TABLE IF NOT EXISTS public.usuarios (
 ALTER TABLE public.usuarios ENABLE ROW LEVEL SECURITY;
 
 -- 3. Políticas para Usuarios
+DROP POLICY IF EXISTS "Usuarios son legibles por todos" ON public.usuarios;
 CREATE POLICY "Usuarios son legibles por todos" ON public.usuarios
     FOR SELECT USING (true);
-
-CREATE POLICY "Usuarios son modificables por si mismos o por admin" ON public.usuarios
-    FOR ALL USING (
-        id = auth.uid() OR
-        EXISTS (
-            SELECT 1 FROM public.usuarios 
-            WHERE usuarios.id = auth.uid() AND usuarios.role = 'Admin'
-        )
-    ) WITH CHECK (
-        id = auth.uid() OR
-        EXISTS (
-            SELECT 1 FROM public.usuarios 
-            WHERE usuarios.id = auth.uid() AND usuarios.role = 'Admin'
-        )
-    );
 
 -- 4. Trigger para updated_at
 CREATE TRIGGER set_updated_at_usuarios
@@ -334,10 +309,7 @@ CREATE TABLE IF NOT EXISTS public.pedidos (
 ALTER TABLE public.pedidos ENABLE ROW LEVEL SECURITY;
 
 -- Políticas de acceso para Pedidos
-CREATE POLICY "Pedidos son insertables por todos" ON public.pedidos
-    FOR INSERT WITH CHECK (true);
-
--- Solo el dueño del pedido o personal de la tienda puede leer los datos
+DROP POLICY IF EXISTS "Pedidos legibles por propietarios o staff" ON public.pedidos;
 CREATE POLICY "Pedidos legibles por propietarios o staff" ON public.pedidos
     FOR SELECT USING (
         (auth.uid() IS NOT NULL AND user_id = auth.uid()) OR
@@ -347,7 +319,7 @@ CREATE POLICY "Pedidos legibles por propietarios o staff" ON public.pedidos
         )
     );
 
--- Solo personal de la tienda puede actualizar estados
+DROP POLICY IF EXISTS "Pedidos actualizables por staff" ON public.pedidos;
 CREATE POLICY "Pedidos actualizables por staff" ON public.pedidos
     FOR UPDATE USING (
         EXISTS (
@@ -387,6 +359,11 @@ CREATE INDEX IF NOT EXISTS idx_pedidos_created_at ON public.pedidos(created_at D
 -- Habilitar extensión para búsqueda rápida de texto
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE INDEX IF NOT EXISTS idx_productos_nombre_trgm ON public.productos USING gin (nombre gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_productos_barcode_trgm ON public.productos USING gin (codigo_barras gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_productos_descuento ON public.productos(descuento DESC);
+CREATE INDEX IF NOT EXISTS idx_productos_precio ON public.productos(precio);
+CREATE INDEX IF NOT EXISTS idx_productos_stock ON public.productos(cantidad_disponible);
+CREATE INDEX IF NOT EXISTS idx_productos_recomendado ON public.productos(campo_personalizado_1);
 
 
 -- ==============================================================================

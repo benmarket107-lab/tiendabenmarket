@@ -1,33 +1,44 @@
 import '../index.css';
 import Providers from './providers';
 import Script from 'next/script';
+import { Plus_Jakarta_Sans, Inter } from 'next/font/google';
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-headline',
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800'],
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-body',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+});
 
 export const metadata = {
-  title: 'Benmarket Express',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.benmarket.com.py'),
+  title: {
+    default: 'Benmarket Express | Supermercado Online en Ciudad del Este',
+    template: '%s | Benmarket Express',
+  },
   description: 'Hacé tus compras online en BenMarket Express. Calidad, rapidez y los mejores precios directo a tu casa en Ciudad del Este.',
   openGraph: {
     title: 'Benmarket Express - Tu Supermercado Online',
     description: 'Hacé tus compras online con entrega rápida. Calidad y variedad en Ciudad del Este.',
     type: 'website',
+    locale: 'es_PY',
+    siteName: 'Benmarket Express',
   },
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es">
+    <html lang="es" className={`${plusJakartaSans.variable} ${inter.variable}`}>
       <head>
         <link rel="icon" type="image/x-icon" href="/favicon.ico?v=3" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-          rel="stylesheet"
-        />
       </head>
       <body className="bg-surface font-body text-on-surface">
         <Script

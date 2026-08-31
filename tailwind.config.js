@@ -45,9 +45,9 @@ export default {
         "inverse-primary": "#f87171",
       },
       fontFamily: {
-        "headline": ["Plus Jakarta Sans", "sans-serif"],
-        "body": ["Inter", "sans-serif"],
-        "label": ["Inter", "sans-serif"],
+        "headline": ["var(--font-headline)", "Plus Jakarta Sans", "sans-serif"],
+        "body": ["var(--font-body)", "Inter", "sans-serif"],
+        "label": ["var(--font-body)", "Inter", "sans-serif"],
       },
       borderRadius: {
         "DEFAULT": "0.25rem",
