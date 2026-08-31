@@ -35,11 +35,14 @@ const getCategoryIcon = (cat) => {
   return <ShoppingBag size={20} />;
 };
 
+import { getYouTubeId, getTikTokId, isDirectVideo } from '../../utils/videoParsers';
+
 export default function HomeClient() {
   const { categories, rawCategories, globalSearchQuery, setGlobalSearchQuery, banners, bannersReady, fetchProductsPage } = useAppContext();
   const [selectedCategory, setSelectedCategory] = useState('Productos Recomendados');
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [products, setProducts] = useState([]);
   const [hasMore, setHasMore] = useState(false);
@@ -76,14 +79,14 @@ export default function HomeClient() {
 
   // Auto-play del slider
   useEffect(() => {
-    if (bannersReady && !globalSearchQuery && activeBanners.length > 1) {
+    if (bannersReady && !globalSearchQuery && activeBanners.length > 1 && !isPaused) {
       const timer = setInterval(() => {
         setIsTransitioning(true);
         setCurrentSlide((prev) => prev + 1);
       }, 5000); // Cambia cada 5 segundos
       return () => clearInterval(timer);
     }
-  }, [bannersReady, globalSearchQuery, activeBanners.length]);
+  }, [bannersReady, globalSearchQuery, activeBanners.length, isPaused]);
 
   // Resetear al primer slide sin animación cuando llegamos al slide duplicado
   useEffect(() => {
@@ -173,34 +176,92 @@ export default function HomeClient() {
           </div>
         </section>
       ) : activeBanners.length > 0 ? (
-        <section className="mb-8 sm:mb-16 pt-0 relative">
+        <section 
+          className="mb-8 sm:mb-16 pt-0 relative"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
+        >
           <div className="relative aspect-[2/1] md:aspect-[12/5] w-full max-w-[1920px] mx-auto overflow-hidden bg-slate-900 shadow-sm">
             {/* Slider Container */}
             <div 
               className={`absolute inset-0 flex w-full h-full ${isTransitioning ? 'transition-transform duration-1000 ease-in-out' : 'transition-none'}`}
               style={{ transform: `translateX(-${currentSlide * 100}%)` }}
             >
-              {slides.map((banner, index) => (
-                <div key={`${banner.id}-${index}`} className="w-full h-full shrink-0 relative bg-slate-900 overflow-hidden">
-                  {/* Blurred Background */}
-                  <img 
-                    src={banner.image}
-                    alt="" 
-                    aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110"
-                  />
-                  {/* Main Banner */}
-                  <img 
-                    src={banner.image}
-                    alt={banner.name || `Banner ${index + 1}`} 
-                    loading={index === 0 ? 'eager' : 'lazy'}
-                    decoding="async"
-                    className="absolute inset-0 w-full h-full object-contain object-center z-10"
-                  />
-                  {/* Overlay oscuro opcional para que se vean mejor los indicadores */}
-                  <div className="absolute inset-0 bg-black/20 z-20 pointer-events-none"></div>
-                </div>
-              ))}
+              {slides.map((banner, index) => {
+                const ytId = getYouTubeId(banner.image);
+                const tkId = getTikTokId(banner.image);
+                const isDirVideo = isDirectVideo(banner.image);
+                const isVideo = ytId || tkId || isDirVideo;
+
+                return (
+                  <div key={`${banner.id}-${index}`} className="w-full h-full shrink-0 relative bg-slate-900 overflow-hidden flex items-center justify-center">
+                    {isVideo ? (
+                      <>
+                        {ytId && (
+                          <iframe
+                            className="absolute w-full h-full border-0 pointer-events-none"
+                            src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${ytId}&showinfo=0&rel=0&modestbranding=1`}
+                            title="YouTube video player"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
+                        )}
+                        {tkId && (
+                          <iframe
+                            className="absolute w-full max-w-[350px] h-full max-h-[600px] border-0 rounded-lg shadow-2xl z-10"
+                            src={`https://www.tiktok.com/embed/v2/${tkId}`}
+                            title="TikTok video player"
+                            allow="autoplay; encrypted-media;"
+                            allowFullScreen
+                          ></iframe>
+                        )}
+                        {isDirVideo && (
+                          <>
+                            <video
+                              className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110"
+                              src={banner.image}
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                            ></video>
+                            <video
+                              className="absolute inset-0 w-full h-full object-contain object-center z-10 pointer-events-none"
+                              src={banner.image}
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                            ></video>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {/* Blurred Background */}
+                        <img 
+                          src={banner.image}
+                          alt="" 
+                          aria-hidden="true"
+                          className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110"
+                        />
+                        {/* Main Banner */}
+                        <img 
+                          src={banner.image}
+                          alt={banner.name || `Banner ${index + 1}`} 
+                          loading={index === 0 ? 'eager' : 'lazy'}
+                          decoding="async"
+                          className="absolute inset-0 w-full h-full object-contain object-center z-10 pointer-events-none"
+                        />
+                      </>
+                    )}
+                    {/* Overlay oscuro opcional para que se vean mejor los indicadores */}
+                    <div className="absolute inset-0 bg-black/20 z-20 pointer-events-none"></div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Dots Indicators */}

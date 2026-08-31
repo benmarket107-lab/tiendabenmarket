@@ -388,3 +388,156 @@ CREATE INDEX IF NOT EXISTS idx_pedidos_created_at ON public.pedidos(created_at D
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE INDEX IF NOT EXISTS idx_productos_nombre_trgm ON public.productos USING gin (nombre gin_trgm_ops);
 
+
+-- ==============================================================================
+-- BENMARKET: SCRIPT DE REFACTORIZACIÓN DE SEGURIDAD (CRÍTICO)
+-- Ejecutar en el SQL Editor del panel de Supabase
+-- ==============================================================================
+
+-- 1. CORREGIR POLÍTICAS RLS EN TABLA 'usuarios'
+-- Evitar que un usuario pueda editar su propio 'role' para escalar privilegios
+DROP POLICY IF EXISTS "Usuarios son modificables por si mismos o por admin" ON public.usuarios;
+
+CREATE POLICY "Usuarios modifican su perfil excepto rol" ON public.usuarios
+    FOR UPDATE USING (
+        id = auth.uid() OR
+        EXISTS (
+            SELECT 1 FROM public.usuarios 
+            WHERE usuarios.id = auth.uid() AND usuarios.role = 'Admin'
+        )
+    ) WITH CHECK (
+        -- Si es admin, puede hacer todo.
+        EXISTS (
+            SELECT 1 FROM public.usuarios 
+            WHERE usuarios.id = auth.uid() AND usuarios.role = 'Admin'
+        )
+        OR 
+        -- Si no es admin, solo puede actualizar si el rol viejo y el nuevo son iguales (no altera rol)
+        (
+            id = auth.uid() AND 
+            -- No podemos acceder a OLD.role directamente en la política, pero podemos forzarlo en un TRIGGER
+            -- Para RLS, confiaremos en un trigger para proteger el rol o lo protegemos aquí asegurando que sea 'Cliente'
+            -- Una forma simple es que el cliente solo pueda modificar si role no cambia.
+            true
+        )
+    );
+
+-- Para asegurar totalmente que 'role' no se cambia por clientes, creamos un trigger:
+CREATE OR REPLACE FUNCTION public.protect_user_role()
+RETURNS trigger AS $$
+BEGIN
+    IF auth.uid() = NEW.id AND OLD.role IS DISTINCT FROM NEW.role THEN
+        -- Verificar si es Admin
+        IF NOT EXISTS (SELECT 1 FROM public.usuarios WHERE id = auth.uid() AND role = 'Admin') THEN
+            RAISE EXCEPTION 'Escalada de privilegios detectada. No puedes cambiar tu propio rol.';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_protect_user_role ON public.usuarios;
+CREATE TRIGGER trg_protect_user_role
+    BEFORE UPDATE ON public.usuarios
+    FOR EACH ROW EXECUTE FUNCTION public.protect_user_role();
+
+
+-- 2. CORREGIR POLÍTICAS RLS EN TABLA 'pedidos'
+-- Remover permisos de INSERT directo para obligar a usar la función RPC
+DROP POLICY IF EXISTS "Pedidos son insertables por todos" ON public.pedidos;
+
+-- 3. FUNCIONES RPC OBSOLETAS
+-- Revocamos permisos de ejecución pública para descontar stock arbitrariamente
+REVOKE EXECUTE ON FUNCTION public.descontar_stock_pedido(jsonb) FROM public;
+REVOKE EXECUTE ON FUNCTION public.descontar_stock_pedido(jsonb) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.descontar_stock_pedido(jsonb) FROM authenticated;
+
+-- 4. NUEVA FUNCIÓN RPC PARA CHECKOUT SEGURO
+-- Esta función hace todo el proceso de forma atómica y confiable.
+CREATE OR REPLACE FUNCTION public.procesar_checkout_v2(pedido_data jsonb)
+RETURNS SETOF public.pedidos AS $$
+DECLARE
+    item_record jsonb;
+    producto_db record;
+    calculated_subtotal NUMERIC := 0;
+    calculated_total NUMERIC := 0;
+    input_delivery NUMERIC := (pedido_data->>'delivery')::numeric;
+    new_items jsonb := '[]'::jsonb;
+    inserted_pedido public.pedidos%ROWTYPE;
+BEGIN
+    -- Validar delivery (asegurarnos de que es válido)
+    IF input_delivery IS NULL THEN
+        input_delivery := 0;
+    END IF;
+
+    -- Iterar sobre los items enviados por el cliente
+    FOR item_record IN SELECT * FROM jsonb_array_elements(pedido_data->'items')
+    LOOP
+        -- Buscar el producto real en la DB
+        SELECT * INTO producto_db FROM public.productos WHERE codigo_producto = (item_record->>'id')::text FOR UPDATE;
+
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'Producto no encontrado: %', item_record->>'id';
+        END IF;
+
+        IF producto_db.cantidad_disponible < (item_record->>'quantity')::numeric THEN
+            RAISE EXCEPTION 'Stock insuficiente para el producto: %', producto_db.nombre;
+        END IF;
+
+        -- Acumular subtotal usando el precio REAL de la base de datos
+        calculated_subtotal := calculated_subtotal + (producto_db.precio * (item_record->>'quantity')::numeric);
+
+        -- Descontar stock
+        UPDATE public.productos
+        SET cantidad_disponible = cantidad_disponible - (item_record->>'quantity')::numeric
+        WHERE codigo_producto = producto_db.codigo_producto;
+
+        -- Construir el nuevo array de items con precios reales
+        new_items := new_items || jsonb_build_object(
+            'id', producto_db.codigo_producto,
+            'name', producto_db.nombre,
+            'price', producto_db.precio,
+            'quantity', (item_record->>'quantity')::numeric,
+            'image', item_record->>'image'
+        );
+    END LOOP;
+
+    -- Calcular total
+    calculated_total := calculated_subtotal + input_delivery;
+
+    -- Insertar el pedido con datos verificados
+    INSERT INTO public.pedidos (
+        cliente_nombre,
+        cliente_telefono,
+        cliente_direccion,
+        cliente_barrio,
+        cliente_google_maps,
+        cliente_nota,
+        user_id,
+        items,
+        subtotal,
+        delivery,
+        total,
+        estado
+    ) VALUES (
+        pedido_data->>'cliente_nombre',
+        pedido_data->>'cliente_telefono',
+        pedido_data->>'cliente_direccion',
+        pedido_data->>'cliente_barrio',
+        pedido_data->>'cliente_google_maps',
+        pedido_data->>'cliente_nota',
+        (NULLIF(pedido_data->>'user_id', ''))::uuid,
+        new_items,
+        calculated_subtotal,
+        input_delivery,
+        calculated_total,
+        'Pendiente'
+    ) RETURNING * INTO inserted_pedido;
+
+    RETURN NEXT inserted_pedido;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Dar permisos para usar la función de checkout a clientes anónimos y autenticados
+GRANT EXECUTE ON FUNCTION public.procesar_checkout_v2(jsonb) TO anon;
+GRANT EXECUTE ON FUNCTION public.procesar_checkout_v2(jsonb) TO authenticated;

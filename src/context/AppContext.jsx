@@ -385,32 +385,18 @@ export const AppProvider = ({ children }) => {
 
   // Funciones de Pedidos
   const addPedido = async (pedido) => {
-    const { data, error } = await supabase
-      .from('pedidos')
-      .insert([pedido])
-      .select();
+    // NUEVO FLUJO SEGURO USANDO RPC
+    const { data, error } = await supabase.rpc('procesar_checkout_v2', {
+      pedido_data: pedido
+    });
+
     if (error) {
-      console.error('Error adding order to Supabase:', error);
+      console.error('Error procesando checkout seguro:', error);
       throw error;
     }
     
+    // El RPC devuelve el pedido insertado
     if (data && data[0]) {
-      // Restar el stock de los productos comprados atómicamente a través de RPC en Supabase
-      try {
-        const itemsParaRestar = pedido.items.map(item => ({
-          id: item.id,
-          quantity: Number(item.quantity)
-        }));
-        
-        const { error: rpcError } = await supabase.rpc('descontar_stock_pedido', {
-          productos_pedido: itemsParaRestar
-        });
-        
-        if (rpcError) throw rpcError;
-      } catch (stockError) {
-        console.error("Error actualizando el stock con RPC:", stockError);
-      }
-
       setPedidos(prev => [data[0], ...prev]);
       return data[0];
     }

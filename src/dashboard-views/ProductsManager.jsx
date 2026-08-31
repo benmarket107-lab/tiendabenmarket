@@ -235,6 +235,16 @@ export default function ProductsManager() {
     }
   };
 
+  const handleChangeCategory = async (product, newCategory) => {
+    try {
+      await updateProduct(product.id, { category: newCategory });
+      setProducts(prev => prev.map(p => p.id === product.id ? { ...p, category: newCategory } : p));
+    } catch (error) {
+      console.error('Error changing category:', error);
+      alert('Error al actualizar la categoría.');
+    }
+  };
+
   // Función para exportar productos a JSON
   const handleExportData = () => {
     const dataStr = JSON.stringify(products, null, 2);
@@ -357,7 +367,7 @@ export default function ProductsManager() {
                 <th className="p-4 font-semibold text-center">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-200">
               {products.map(product => (
                 <tr key={product.id} className="hover:bg-slate-50 transition-colors">
                   <td className="p-4 flex items-center gap-3">
@@ -367,7 +377,17 @@ export default function ProductsManager() {
                       {product.unit && <span className="text-xs text-slate-400">Unidad: {product.unit}</span>}
                     </div>
                   </td>
-                  <td className="p-4 text-slate-600">{product.category}</td>
+                  <td className="p-4 text-slate-600">
+                    <select
+                      value={product.category || ''}
+                      onChange={(e) => handleChangeCategory(product, e.target.value)}
+                      className="bg-transparent border border-transparent hover:border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded px-2 py-1 text-sm text-slate-700 w-full max-w-[150px] transition-colors cursor-pointer outline-none"
+                    >
+                      {categories.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </td>
                   <td className="p-4 text-right">
                     <div className="flex flex-col items-end">
                       {product.discount > 0 ? (

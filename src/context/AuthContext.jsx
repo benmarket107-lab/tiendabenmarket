@@ -10,26 +10,39 @@ export const AuthProvider = ({ children }) => {
 
   const fetchProfile = async (authUser) => {
     try {
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('*')
-        .eq('id', authUser.id)
-        .maybeSingle();
+      // Intentar hasta 3 veces obtener el perfil (esperando al trigger)
+      let profileData = null;
+      let profileError = null;
       
-      if (!error && data) {
+      for (let i = 0; i < 3; i++) {
+        const { data, error } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('id', authUser.id)
+          .maybeSingle();
+          
+        if (data) {
+          profileData = data;
+          break;
+        }
+        profileError = error;
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      if (!profileError && profileData) {
         return {
-          ...data,
+          ...profileData, // profileData.role es el SEGURO
           nombre: authUser.user_metadata?.nombre || '',
           apellido: authUser.user_metadata?.apellido || '',
           telefono: authUser.user_metadata?.telefono || '',
         };
       } else {
-        // Fallback en caso de que tarde el trigger de DB
+        // Fallback SEGURO: Jamás leer el rol de user_metadata
         return {
           id: authUser.id,
           name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Usuario',
           email: authUser.email || '',
-          role: authUser.user_metadata?.role || 'Cliente',
+          role: 'Cliente', // Seguridad estricta
           avatar: authUser.user_metadata?.avatar_url || null,
           nombre: authUser.user_metadata?.nombre || '',
           apellido: authUser.user_metadata?.apellido || '',
@@ -42,7 +55,7 @@ export const AuthProvider = ({ children }) => {
         id: authUser.id,
         name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Usuario',
         email: authUser.email || '',
-        role: authUser.user_metadata?.role || 'Cliente',
+        role: 'Cliente', // Seguridad estricta
         avatar: authUser.user_metadata?.avatar_url || null,
         nombre: authUser.user_metadata?.nombre || '',
         apellido: authUser.user_metadata?.apellido || '',
