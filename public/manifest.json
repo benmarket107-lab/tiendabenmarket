@@ -1,12 +1,15 @@
 {
+  "id": "py.com.benmarket.express",
   "name": "Benmarket Express",
   "short_name": "Benmarket",
-  "description": "Tu Supermercado Online en Ciudad del Este",
+  "description": "Tu Supermercado Online en Ciudad del Este. Compras rápidas, delivery y seguimiento de pedidos en vivo.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#b91c1c",
   "orientation": "portrait-primary",
+  "categories": ["shopping", "food", "lifestyle"],
   "icons": [
     {
       "src": "/logo_new.webp",
@@ -19,6 +22,22 @@
       "sizes": "512x512",
       "type": "image/webp",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mis Pedidos",
+      "short_name": "Pedidos",
+      "description": "Ver el estado de mis pedidos",
+      "url": "/orders",
+      "icons": [{ "src": "/logo_new.webp", "sizes": "192x192" }]
+    },
+    {
+      "name": "Panel de Control",
+      "short_name": "Dashboard",
+      "description": "Acceso al panel de administración y caja",
+      "url": "/dashboard",
+      "icons": [{ "src": "/logo_new.webp", "sizes": "192x192" }]
     }
   ]
 }

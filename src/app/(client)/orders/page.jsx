@@ -6,7 +6,15 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../../supabaseClient';
 import { useAuth } from '../../../context/AuthContext';
 import { formatCurrency } from '../../../utils/currency';
-import { Package, Truck, Store, ChevronDown, ChevronUp, Clock, SearchX, Trash2 } from 'lucide-react';
+import { 
+  Package, Truck, Store, ChevronDown, ChevronUp, Clock, 
+  SearchX, Trash2, Bell, BellRing, CheckCircle2 
+} from 'lucide-react';
+import { 
+  subscribeToPushNotifications, 
+  getNotificationPermission, 
+  isPushNotificationSupported 
+} from '../../../utils/pushNotifications';
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -14,6 +22,35 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState(() => new Set());
+  const [pushStatus, setPushStatus] = useState('default');
+  const [isSubscribingPush, setIsSubscribingPush] = useState(false);
+  const [pushMessage, setPushMessage] = useState(null);
+
+  useEffect(() => {
+    setPushStatus(getNotificationPermission());
+  }, []);
+
+  const handleSubscribeClientPush = async () => {
+    if (!isPushNotificationSupported()) {
+      alert('Las notificaciones push no son compatibles con este navegador.');
+      return;
+    }
+
+    setIsSubscribingPush(true);
+    setPushMessage(null);
+    try {
+      await subscribeToPushNotifications(user?.id, 'Cliente');
+      setPushStatus('granted');
+      setPushMessage('¡Listo! Te avisaremos cuando tu pedido cambie de estado.');
+      setTimeout(() => setPushMessage(null), 5000);
+    } catch (err) {
+      console.error('Error al suscribir cliente a push:', err);
+      alert(err.message || 'No se pudo activar las notificaciones.');
+      setPushStatus(getNotificationPermission());
+    } finally {
+      setIsSubscribingPush(false);
+    }
+  };
 
   const toggleExpanded = (id) => {
     setExpandedIds(prev => {
@@ -158,6 +195,41 @@ export default function OrdersPage() {
             Seguir comprando
           </Link>
         </div>
+
+        {/* Banner de Notificaciones Push de Estado para el Cliente */}
+        {pushStatus !== 'granted' ? (
+          <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 bg-amber-100 text-amber-700 rounded-xl shrink-0 mt-0.5 sm:mt-0">
+                <Bell className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm">
+                  ¿Querés recibir avisos automáticos de tu pedido?
+                </h3>
+                <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                  Te notificaremos cuando tu pedido esté siendo preparado y cuando el delivery salga hacia tu dirección.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleSubscribeClientPush}
+              disabled={isSubscribingPush}
+              className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition active:scale-95 disabled:opacity-50"
+            >
+              <Bell className="w-4 h-4" />
+              {isSubscribingPush ? 'Activando...' : 'Activar Notificaciones'}
+            </button>
+          </div>
+        ) : (
+          <div className="mb-6 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-between gap-3 text-xs font-semibold text-emerald-800">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Notificaciones push de seguimiento activas en este dispositivo.</span>
+            </div>
+            {pushMessage && <span className="font-bold text-emerald-700">{pushMessage}</span>}
+          </div>
+        )}
 
         {loading ? (
           <div className="bg-surface-container-lowest rounded-3xl border border-outline-variant/20 shadow-sm p-10 flex items-center justify-center gap-3 text-on-surface-variant font-bold">

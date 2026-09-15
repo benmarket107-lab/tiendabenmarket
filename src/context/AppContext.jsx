@@ -405,8 +405,25 @@ export const AppProvider = ({ children }) => {
     
     // El RPC devuelve el pedido insertado
     if (data && data[0]) {
-      setPedidos(prev => [data[0], ...prev]);
-      return data[0];
+      const nuevoPedido = data[0];
+      setPedidos(prev => [nuevoPedido, ...prev]);
+
+      // Disparar Web Push a Administradores y Cajeros garantizando entrega
+      try {
+        await fetch('/api/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eventType: 'NEW_ORDER',
+            pedido: nuevoPedido,
+          }),
+          keepalive: true,
+        });
+      } catch (err) {
+        console.warn('Aviso de notificación push de nuevo pedido:', err);
+      }
+
+      return nuevoPedido;
     }
   };
 
@@ -421,10 +438,29 @@ export const AppProvider = ({ children }) => {
       throw error;
     }
     if (data && data[0]) {
-      setPedidos(prev => prev.map(p => p.id === id ? data[0] : p));
-      return data[0];
+      const pedidoActualizado = data[0];
+      setPedidos(prev => prev.map(p => p.id === id ? pedidoActualizado : p));
+
+      // Disparar Web Push asíncrono al Cliente con el nuevo estado
+      try {
+        await fetch('/api/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eventType: 'STATUS_UPDATED',
+            pedido: pedidoActualizado,
+          }),
+          keepalive: true,
+        });
+      } catch (err) {
+        console.warn('Aviso de notificación push de actualización de pedido:', err);
+      }
+
+      return pedidoActualizado;
     }
   };
+
+
 
   // Funciones de Delivery
   const updateDeliveryPrice = async (newPrice) => {

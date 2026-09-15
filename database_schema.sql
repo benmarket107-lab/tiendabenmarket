@@ -518,3 +518,55 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Dar permisos para usar la función de checkout a clientes anónimos y autenticados
 GRANT EXECUTE ON FUNCTION public.procesar_checkout_v2(jsonb) TO anon;
 GRANT EXECUTE ON FUNCTION public.procesar_checkout_v2(jsonb) TO authenticated;
+
+-- ==============================================================================
+-- 5. TABLA DE SUSCRIPCIONES PUSH PARA PWA (ADMIN, CAJERO Y CLIENTE)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.push_subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL DEFAULT 'Cliente', -- 'Admin', 'Cajero', 'Cliente'
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Índices para búsqueda eficiente
+CREATE INDEX IF NOT EXISTS idx_push_subs_user ON public.push_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_push_subs_role ON public.push_subscriptions(role);
+
+-- Habilitar RLS
+ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de seguridad:
+-- 1. Los usuarios pueden insertar y actualizar sus suscripciones
+DROP POLICY IF EXISTS "Usuarios insertan sus suscripciones" ON public.push_subscriptions;
+CREATE POLICY "Usuarios insertan sus suscripciones" ON public.push_subscriptions
+    FOR INSERT
+    WITH CHECK (
+        auth.uid() IS NOT NULL AND user_id = auth.uid()
+    );
+
+DROP POLICY IF EXISTS "Usuarios leen y modifican sus suscripciones" ON public.push_subscriptions;
+CREATE POLICY "Usuarios leen y modifican sus suscripciones" ON public.push_subscriptions
+    FOR ALL
+    USING (
+        auth.uid() IS NOT NULL AND user_id = auth.uid()
+    )
+    WITH CHECK (
+        auth.uid() IS NOT NULL AND user_id = auth.uid()
+    );
+
+-- 2. Staff (Admin y Cajero) pueden leer endpoints para despachar o el backend con Service Role
+DROP POLICY IF EXISTS "Staff puede leer suscripciones de pedidos" ON public.push_subscriptions;
+CREATE POLICY "Staff puede leer suscripciones de pedidos" ON public.push_subscriptions
+    FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.usuarios 
+            WHERE usuarios.id = auth.uid() AND usuarios.role IN ('Admin', 'Cajero')
+        )
+    );

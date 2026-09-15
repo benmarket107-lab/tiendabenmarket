@@ -1,15 +1,23 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { 
   Users, ShoppingBag, DollarSign, TrendingUp, RefreshCw, 
   Flame, Award, Eye, X, MessageCircle, MapPin, Truck, Store, 
-  Clock, CheckCircle, Package, AlertCircle, ChevronRight
+  Clock, CheckCircle, Package, AlertCircle, ChevronRight,
+  Bell, BellRing, BellOff, Volume2
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency } from '../utils/currency';
 import { supabase } from '../supabaseClient';
+import { 
+  subscribeToPushNotifications, 
+  getNotificationPermission, 
+  isPushNotificationSupported 
+} from '../utils/pushNotifications';
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
   const { users: contextUsers, updatePedidoEstado } = useAppContext();
   const [pedidos, setPedidos] = useState([]);
   const [usersCount, setUsersCount] = useState(contextUsers?.length || 0);
@@ -20,6 +28,86 @@ export default function AdminDashboard() {
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [topProductsTimeframe, setTopProductsTimeframe] = useState('all'); // 'today' | '7days' | 'month' | 'all'
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [pushStatus, setPushStatus] = useState('default'); // 'default' | 'granted' | 'denied' | 'unsupported'
+  const [isSubscribingPush, setIsSubscribingPush] = useState(false);
+  const [pushMessage, setPushMessage] = useState(null);
+
+  // Reproductor sintético de alerta sonora (campana de caja / aviso de pedido)
+  const playOrderAlertSound = useCallback(() => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // A5
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.6);
+    } catch (_) {}
+  }, []);
+
+  // Verificar estado inicial de permisos de notificación
+  useEffect(() => {
+    setPushStatus(getNotificationPermission());
+  }, []);
+
+  const handleTogglePush = async () => {
+    if (!isPushNotificationSupported()) {
+      alert('Las notificaciones push no son compatibles con este navegador o dispositivo.');
+      return;
+    }
+
+    setIsSubscribingPush(true);
+    setPushMessage(null);
+    try {
+      const role = user?.role || 'Cajero';
+      await subscribeToPushNotifications(user?.id, role);
+      setPushStatus('granted');
+      playOrderAlertSound();
+      setPushMessage('¡Alertas activadas! Recibirás notificaciones push al entrar nuevos pedidos.');
+      setTimeout(() => setPushMessage(null), 5000);
+    } catch (err) {
+      console.error('Error al suscribir a push:', err);
+      alert(err.message || 'No se pudo activar las notificaciones push.');
+      setPushStatus(getNotificationPermission());
+    } finally {
+      setIsSubscribingPush(false);
+    }
+  };
+
+  // Enviar notificación push de prueba
+  const handleTestPushNotification = async () => {
+    try {
+      const res = await fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventType: 'NEW_ORDER',
+          pedido: {
+            id: 'test-' + Date.now(),
+            cliente_nombre: 'Prueba de Sistema',
+            total: 125000,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (data.sentCount > 0) {
+        setPushMessage(`✅ ¡Notificación push enviada a ${data.sentCount} dispositivo(s)!`);
+        playOrderAlertSound();
+      } else {
+        alert('No se encontraron dispositivos suscritos con rol Admin o Cajero.');
+      }
+      setTimeout(() => setPushMessage(null), 6000);
+    } catch (err) {
+      alert('Error probando push: ' + err.message);
+    }
+  };
 
   // Carga inicial y refresco de datos
   const fetchDashboardData = useCallback(async (showRefreshingSpinner = false) => {
@@ -98,6 +186,19 @@ export default function AdminDashboard() {
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setPedidos(prev => [payload.new, ...prev]);
+            // Sonido de alerta para caja / administración
+            playOrderAlertSound();
+
+            // Notificación visual si la ventana está abierta/en segundo plano
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+              try {
+                const totalFormateado = Number(payload.new.total || 0).toLocaleString('es-PY');
+                new Notification('🛍️ ¡Nuevo Pedido Pendiente!', {
+                  body: `Cliente: ${payload.new.cliente_nombre || 'Cliente'} - Total: Gs. ${totalFormateado}`,
+                  icon: '/logo_new.webp',
+                });
+              } catch (_) {}
+            }
           } else if (payload.eventType === 'UPDATE') {
             setPedidos(prev => prev.map(p => (p.id === payload.new.id ? payload.new : p)));
             setSelectedPedido(curr => (curr && curr.id === payload.new.id ? payload.new : curr));
@@ -112,7 +213,7 @@ export default function AdminDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchDashboardData]);
+  }, [fetchDashboardData, playOrderAlertSound]);
 
   // Manejo de cambio de estado de un pedido
   const handleStatusChange = async (pedidoId, newStatus) => {
@@ -254,22 +355,75 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Encabezado y Acción de Refresco */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+      {/* Encabezado, Alertas Push y Acción de Refresco */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 font-headline">Dashboard Global</h1>
           <p className="text-sm font-medium text-slate-500 mt-1">
-            Métricas en tiempo real, análisis de productos más vendidos y gestión de pedidos.
+            Métricas en tiempo real, alertas push de pedidos y gestión de ventas para caja y administración.
           </p>
+          {pushMessage && (
+            <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold animate-in fade-in">
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
+              {pushMessage}
+            </div>
+          )}
         </div>
-        <button
-          onClick={() => fetchDashboardData(true)}
-          disabled={isRefreshing}
-          className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-2xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
-          {isRefreshing ? 'Actualizando...' : 'Actualizar Datos'}
-        </button>
+
+        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+          {/* Botón de Activación de Notificaciones Push */}
+          <button
+            onClick={handleTogglePush}
+            disabled={isSubscribingPush}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all shadow-sm active:scale-95 disabled:opacity-50 ${
+              pushStatus === 'granted'
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+                : 'bg-primary text-white hover:bg-primary-dark shadow-primary/20'
+            }`}
+            title="Recibir notificaciones en este dispositivo al entrar nuevos pedidos"
+          >
+            {isSubscribingPush ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : pushStatus === 'granted' ? (
+              <BellRing className="w-4 h-4 text-emerald-600 animate-pulse" />
+            ) : (
+              <Bell className="w-4 h-4" />
+            )}
+            <span>
+              {pushStatus === 'granted' ? 'Alertas Push Activas' : 'Activar Alertas de Pedidos'}
+            </span>
+          </button>
+
+          {/* Botón para Probar Notificación Push */}
+          <button
+            onClick={handleTestPushNotification}
+            className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 px-3 py-2.5 rounded-2xl font-semibold text-xs border border-amber-200 transition active:scale-95 shadow-sm"
+            title="Enviar una notificación push de prueba a este dispositivo"
+          >
+            <BellRing className="w-4 h-4 text-amber-600" />
+            <span>Probar Push</span>
+          </button>
+
+          {/* Botón para Probar Sonido de Alerta de Caja */}
+          <button
+            onClick={playOrderAlertSound}
+            className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 px-3 py-2.5 rounded-2xl font-semibold text-xs border border-slate-200 transition active:scale-95"
+            title="Probar sonido de timbre de pedido"
+          >
+            <Volume2 className="w-4 h-4 text-slate-500" />
+            <span className="hidden sm:inline">Probar Timbre</span>
+          </button>
+
+          {/* Botón de Refresco Manual */}
+          <button
+            onClick={() => fetchDashboardData(true)}
+            disabled={isRefreshing}
+            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all active:scale-95 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
+            <span>{isRefreshing ? 'Actualizando...' : 'Actualizar'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Tarjetas de Estadísticas Principales */}

@@ -1,6 +1,7 @@
 import '../index.css';
 import Providers from './providers';
 import Script from 'next/script';
+import InstallPromptBanner from '../components/InstallPromptBanner';
 import { Plus_Jakarta_Sans, Inter } from 'next/font/google';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -39,6 +40,11 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="icon" type="image/x-icon" href="/favicon.ico?v=3" />
         <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#b91c1c" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Benmarket" />
+        <link rel="apple-touch-icon" href="/logo_new.webp" />
       </head>
       <body className="bg-surface font-body text-on-surface">
         <Script
@@ -55,8 +61,10 @@ export default function RootLayout({ children }) {
         </Script>
         <Providers>
           {children}
+          <InstallPromptBanner />
         </Providers>
       </body>
     </html>
   );
 }
+
