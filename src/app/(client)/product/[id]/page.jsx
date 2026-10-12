@@ -1,6 +1,8 @@
 import { supabase } from '../../../../supabaseClient';
 import ProductDetailsClient from './ProductDetailsClient';
 
+export const dynamic = 'force-dynamic';
+
 const PRODUCT_PLACEHOLDER_IMAGE =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'><rect width='400' height='400' fill='%23f8fafc'/><text x='200' y='210' font-size='18' text-anchor='middle' fill='%2394a3b8' font-family='Arial, sans-serif'>Sin imagen</text></svg>";
 
@@ -24,7 +26,8 @@ async function getProduct(id) {
       const now = new Date();
       const start = data.categorias?.fecha_inicio_descuento ? new Date(data.categorias.fecha_inicio_descuento) : null;
       const end = data.categorias?.fecha_fin_descuento ? new Date(data.categorias.fecha_fin_descuento) : null;
-      if (start && end && now >= start && now <= end && catDesc > desc) {
+      const isDateValid = (!start && !end) || (start && end && now >= start && now <= end);
+      if (isDateValid && catDesc > desc) {
         desc = catDesc;
       }
     }

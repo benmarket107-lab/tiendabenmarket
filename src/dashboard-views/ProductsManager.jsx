@@ -135,7 +135,7 @@ export default function ProductsManager() {
       setFormData({ 
         ...product, 
         price: product.originalPrice !== undefined ? product.originalPrice : product.price,
-        discount: product.discount || 0,
+        discount: product.ownDiscount !== undefined ? product.ownDiscount : (product.discount || 0),
         isRecommended: product.isRecommended || false
       });
     } else {

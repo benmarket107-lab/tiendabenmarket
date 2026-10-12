@@ -21,7 +21,7 @@ export default function CategoriesManager() {
     setSelectedCategory(cat);
     setEditName(cat.nombre || '');
     setPreviewImage(cat.foto_url || '');
-    setDiscount(cat.descuento || '');
+    setDiscount(cat.descuento !== null && cat.descuento !== undefined ? cat.descuento : '');
     
     const formatForInput = (dateStr) => {
       if (!dateStr) return '';
@@ -79,27 +79,24 @@ export default function CategoriesManager() {
         updateData.nombre = editName.trim();
       }
 
-      const parsedDiscount = Number(discount);
-      if (!isNaN(parsedDiscount) && parsedDiscount !== Number(selectedCategory.descuento || 0)) {
-        updateData.descuento = parsedDiscount;
-      }
-
       const getUtcIso = (localStr) => {
         if (!localStr) return null;
         const d = new Date(localStr);
-        return d.toISOString();
+        return isNaN(d.getTime()) ? null : d.toISOString();
       };
-      
-      const newStart = getUtcIso(discountStart);
-      const oldStart = selectedCategory.fecha_inicio_descuento ? new Date(selectedCategory.fecha_inicio_descuento).toISOString() : null;
-      if (newStart !== oldStart) {
-        updateData.fecha_inicio_descuento = newStart;
-      }
 
-      const newEnd = getUtcIso(discountEnd);
-      const oldEnd = selectedCategory.fecha_fin_descuento ? new Date(selectedCategory.fecha_fin_descuento).toISOString() : null;
-      if (newEnd !== oldEnd) {
-        updateData.fecha_fin_descuento = newEnd;
+      const parsedDiscount = Number(discount);
+      const isZeroDiscount = isNaN(parsedDiscount) || parsedDiscount <= 0 || discount === '' || discount === '0' || discount === 0;
+
+      if (isZeroDiscount) {
+        // Al dejar en 0 o vacío, se anula el descuento de la categoría y se limpian las fechas programadas
+        updateData.descuento = 0;
+        updateData.fecha_inicio_descuento = null;
+        updateData.fecha_fin_descuento = null;
+      } else {
+        updateData.descuento = parsedDiscount;
+        updateData.fecha_inicio_descuento = getUtcIso(discountStart);
+        updateData.fecha_fin_descuento = getUtcIso(discountEnd);
       }
 
       if (Object.keys(updateData).length > 0) {
@@ -191,6 +188,7 @@ export default function CategoriesManager() {
                       placeholder="0"
                       className="w-full p-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-medium text-slate-800"
                     />
+                    <p className="text-xs text-slate-400 mt-1">Ingresá 0 para quitar los descuentos de esta categoría.</p>
                   </div>
                   {Number(discount) > 0 && (
                     <>

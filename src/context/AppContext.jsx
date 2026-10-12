@@ -196,10 +196,9 @@ export const AppProvider = ({ children }) => {
         const start = p.categorias?.fecha_inicio_descuento ? new Date(p.categorias.fecha_inicio_descuento) : null;
         const end = p.categorias?.fecha_fin_descuento ? new Date(p.categorias.fecha_fin_descuento) : null;
         
-        if (start && end && now >= start && now <= end) {
-          if (catDesc > desc) {
-            desc = catDesc;
-          }
+        const isDateValid = (!start && !end) || (start && end && now >= start && now <= end);
+        if (isDateValid && catDesc > desc) {
+          desc = catDesc;
         }
       }
 
@@ -211,6 +210,7 @@ export const AppProvider = ({ children }) => {
         originalPrice: basePrice,
         price: activePrice,
         discount: desc,
+        ownDiscount: Number(p.descuento) || 0,
         stock: p.cantidad_disponible,
         image: p.foto_url || PRODUCT_PLACEHOLDER_IMAGE,
         category: p.categorias?.nombre || 'Sin Categoría',
@@ -265,10 +265,9 @@ export const AppProvider = ({ children }) => {
           const start = data.categorias?.fecha_inicio_descuento ? new Date(data.categorias.fecha_inicio_descuento) : null;
           const end = data.categorias?.fecha_fin_descuento ? new Date(data.categorias.fecha_fin_descuento) : null;
           
-          if (start && end && now >= start && now <= end) {
-            if (catDesc > desc) {
-              desc = catDesc;
-            }
+          const isDateValid = (!start && !end) || (start && end && now >= start && now <= end);
+          if (isDateValid && catDesc > desc) {
+            desc = catDesc;
           }
         }
 
@@ -280,6 +279,7 @@ export const AppProvider = ({ children }) => {
           originalPrice: basePrice,
           price: activePrice,
           discount: desc,
+          ownDiscount: Number(data.descuento) || 0,
           stock: data.cantidad_disponible,
           image: data.foto_url || PRODUCT_PLACEHOLDER_IMAGE,
           category: data.categorias?.nombre || 'Sin Categoría',
@@ -645,6 +645,23 @@ export const AppProvider = ({ children }) => {
       console.error('Error updating category:', error);
       throw error;
     }
+
+    // Si el descuento de la categoría se dejó en 0, también aseguramos que
+    // en la tabla de productos se limpie el campo 'descuento' para todos los productos de esta categoría
+    if (dataUpdates.descuento === 0) {
+      const { error: prodError } = await supabase
+        .from('productos')
+        .update({ descuento: 0 })
+        .eq('codigo_categoria', codigo_categoria);
+
+      if (prodError) {
+        console.error('Error reseteando descuentos de los productos de la categoría:', prodError);
+      }
+    }
+
+    // Limpiar caché en memoria de productos para reflejar los cambios de inmediato
+    productByIdRef.current = {};
+    setProductById({});
     
     const { data: catData, error: catError } = await supabase.from('categorias').select('*');
     if (!catError) {

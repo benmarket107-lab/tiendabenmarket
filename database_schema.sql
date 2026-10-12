@@ -4,9 +4,18 @@ CREATE TABLE IF NOT EXISTS public.categorias (
     nombre TEXT NOT NULL,
     descripcion TEXT,
     foto_url TEXT,
+    descuento NUMERIC(5, 2) DEFAULT 0,
+    fecha_inicio_descuento TIMESTAMPTZ,
+    fecha_fin_descuento TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Asegurar que las columnas existan si la tabla ya fue creada previamente
+ALTER TABLE public.categorias 
+ADD COLUMN IF NOT EXISTS descuento NUMERIC(5, 2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS fecha_inicio_descuento TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS fecha_fin_descuento TIMESTAMPTZ;
 
 -- Crear tabla de Productos
 CREATE TABLE IF NOT EXISTS public.productos (
@@ -44,6 +53,7 @@ ALTER TABLE public.productos ENABLE ROW LEVEL SECURITY;
 
 -- Políticas de acceso para Categorías
 DROP POLICY IF EXISTS "Categorias legibles por todos" ON public.categorias;
+DROP POLICY IF EXISTS "Categorias son legibles por todos" ON public.categorias;
 CREATE POLICY "Categorias legibles por todos" ON public.categorias
     FOR SELECT USING (true);
 
@@ -63,6 +73,7 @@ CREATE POLICY "Categorias modificables por administradores" ON public.categorias
 
 -- Políticas de acceso para Productos
 DROP POLICY IF EXISTS "Productos legibles por todos" ON public.productos;
+DROP POLICY IF EXISTS "Productos son legibles por todos" ON public.productos;
 CREATE POLICY "Productos legibles por todos" ON public.productos
     FOR SELECT USING (true);
 
@@ -90,11 +101,13 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers para updated_at
+DROP TRIGGER IF EXISTS set_updated_at_categorias ON public.categorias;
 CREATE TRIGGER set_updated_at_categorias
     BEFORE UPDATE ON public.categorias
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at_productos ON public.productos;
 CREATE TRIGGER set_updated_at_productos
     BEFORE UPDATE ON public.productos
     FOR EACH ROW
@@ -110,21 +123,25 @@ VALUES ('productos', 'productos', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Permitir que CUALQUIERA pueda ver y descargar las imágenes (necesario para que la tienda las muestre)
+DROP POLICY IF EXISTS "Imágenes de productos son públicas" ON storage.objects;
 CREATE POLICY "Imágenes de productos son públicas"
   ON storage.objects FOR SELECT
   USING ( bucket_id = 'productos' );
 
 -- 3. Permitir subir/insertar imágenes al bucket 'productos'
+DROP POLICY IF EXISTS "Permitir subir imágenes a productos" ON storage.objects;
 CREATE POLICY "Permitir subir imágenes a productos"
   ON storage.objects FOR INSERT
   WITH CHECK ( bucket_id = 'productos' );
 
 -- 4. Permitir actualizar imágenes en el bucket 'productos'
+DROP POLICY IF EXISTS "Permitir actualizar imágenes en productos" ON storage.objects;
 CREATE POLICY "Permitir actualizar imágenes en productos"
   ON storage.objects FOR UPDATE
   USING ( bucket_id = 'productos' );
 
 -- 5. Permitir borrar imágenes del bucket 'productos'
+DROP POLICY IF EXISTS "Permitir borrar imágenes en productos" ON storage.objects;
 CREATE POLICY "Permitir borrar imágenes en productos"
   ON storage.objects FOR DELETE
   USING ( bucket_id = 'productos' );
@@ -209,6 +226,7 @@ CREATE POLICY "Banners modificables por administradores" ON public.banners
     );
 
 -- Trigger para updated_at
+DROP TRIGGER IF EXISTS set_updated_at_banners ON public.banners;
 CREATE TRIGGER set_updated_at_banners
     BEFORE UPDATE ON public.banners
     FOR EACH ROW
@@ -247,6 +265,7 @@ CREATE POLICY "Usuarios son legibles por todos" ON public.usuarios
     FOR SELECT USING (true);
 
 -- 4. Trigger para updated_at
+DROP TRIGGER IF EXISTS set_updated_at_usuarios ON public.usuarios;
 CREATE TRIGGER set_updated_at_usuarios
     BEFORE UPDATE ON public.usuarios
     FOR EACH ROW
