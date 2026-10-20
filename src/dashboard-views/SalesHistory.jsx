@@ -4,8 +4,9 @@ import { supabase } from '../supabaseClient';
 import { formatCurrency } from '../utils/currency';
 import { 
   Package, Clock, Truck, Play, Check, ExternalLink, 
-  MessageCircle, Search, Bell, Volume2, VolumeX, Eye, X, MapPin, Store
+  MessageCircle, Search, Bell, Volume2, VolumeX, Eye, X, MapPin, Store, Users
 } from 'lucide-react';
+import ClientesModal from '../components/ClientesModal';
 
 export default function SalesHistory() {
   const searchParams = useSearchParams();
@@ -17,6 +18,7 @@ export default function SalesHistory() {
   const [isMuted, setIsMuted] = useState(() => {
     return localStorage.getItem('cashier_sound_muted') === 'true';
   });
+  const [isClientesModalOpen, setIsClientesModalOpen] = useState(false);
 
   useEffect(() => {
     const nextFilter = searchParams?.get('filter');
@@ -192,19 +194,31 @@ export default function SalesHistory() {
           <p className="text-slate-500 text-sm mt-1">Monitorea, prepara y despacha los pedidos recibidos en línea.</p>
         </div>
 
-        {/* Audio Mute Button */}
-        <button
-          onClick={toggleMute}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
-            isMuted 
-              ? 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-600' 
-              : 'bg-primary/5 border-primary/20 text-primary hover:bg-primary/10'
-          }`}
-          title={isMuted ? "Desbloquear alertas sonoras" : "Silenciar alertas sonoras"}
-        >
-          {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-          <span>{isMuted ? "Alertas Silenciadas" : "Alertas Activas"}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Botón Clientes & Promociones para el Cajero */}
+          <button
+            onClick={() => setIsClientesModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md shadow-emerald-600/20 hover:shadow-lg transition-all active:scale-95"
+            title="Abrir base de clientes y difusiones WhatsApp / Newsletter"
+          >
+            <Users className="w-4 h-4" />
+            <span>Clientes & Promos</span>
+          </button>
+
+          {/* Audio Mute Button */}
+          <button
+            onClick={toggleMute}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
+              isMuted 
+                ? 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-600' 
+                : 'bg-primary/5 border-primary/20 text-primary hover:bg-primary/10'
+            }`}
+            title={isMuted ? "Desbloquear alertas sonoras" : "Silenciar alertas sonoras"}
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            <span>{isMuted ? "Alertas Silenciadas" : "Alertas Activas"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Navigation tabs + Search */}
@@ -552,6 +566,12 @@ export default function SalesHistory() {
           </div>
         </div>
       )}
+
+      {/* Modal de Clientes & Newsletter */}
+      <ClientesModal
+        isOpen={isClientesModalOpen}
+        onClose={() => setIsClientesModalOpen(false)}
+      />
     </div>
   );
 }

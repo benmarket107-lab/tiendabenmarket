@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, Users, Settings, BarChart, Package, Image as ImageIcon, Palette, Grid } from 'lucide-react';
+import { ShoppingBag, Users, Settings, BarChart, Package, Image as ImageIcon, Palette, Grid, MessageCircle } from 'lucide-react';
 
 export default function Sidebar({ role }) {
   const pathname = usePathname();
@@ -10,6 +10,7 @@ export default function Sidebar({ role }) {
   const menuItems = {
     Admin: [
       { path: '/dashboard', name: 'Dashboard Global', icon: BarChart },
+      { path: '/dashboard/clients', name: 'Clientes & Promociones', icon: MessageCircle },
       { path: '/dashboard/theme', name: 'Personalizar Marca', icon: Palette },
       { path: '/dashboard/delivery', name: 'Configuración Tienda', icon: Settings },
       { path: '/dashboard/users', name: 'Gestión Usuarios', icon: Users },
@@ -19,6 +20,7 @@ export default function Sidebar({ role }) {
     ],
     Cajero: [
       { path: '/dashboard', name: 'Historial de Ventas', icon: ShoppingBag },
+      { path: '/dashboard/clients', name: 'Clientes & Promociones', icon: MessageCircle },
       { path: '/dashboard/delivery', name: 'Configuración Tienda', icon: Settings },
       { path: '/dashboard/categories', name: 'Gestión Categorías', icon: Grid },
       { path: '/dashboard/products', name: 'Gestión Productos', icon: Package },

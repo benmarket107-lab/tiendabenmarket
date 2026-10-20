@@ -589,3 +589,65 @@ CREATE POLICY "Staff puede leer suscripciones de pedidos" ON public.push_subscri
             WHERE usuarios.id = auth.uid() AND usuarios.role IN ('Admin', 'Cajero')
         )
     );
+
+-- ==============================================================================
+-- 6. TABLA DE CLIENTES Y SUSCRIPTORES PARA MARKETING / PROMOCIONES (NEWSLETTER & WHATSAPP)
+-- ==============================================================================
+
+-- Asegurar que la tabla usuarios admita telefono
+ALTER TABLE public.usuarios 
+ADD COLUMN IF NOT EXISTS telefono TEXT;
+
+-- Crear tabla de clientes para promociones, contactos de caja y newsletter
+CREATE TABLE IF NOT EXISTS public.clientes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre TEXT NOT NULL,
+    telefono TEXT,
+    email TEXT,
+    origen TEXT DEFAULT 'Manual / Caja', -- 'Manual / Caja' | 'Comprador Web' | 'Registro'
+    notas TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Índices de búsqueda rápida
+CREATE INDEX IF NOT EXISTS idx_clientes_telefono ON public.clientes(telefono);
+CREATE INDEX IF NOT EXISTS idx_clientes_email ON public.clientes(email);
+CREATE INDEX IF NOT EXISTS idx_clientes_nombre ON public.clientes(nombre);
+
+-- Habilitar Row Level Security (RLS)
+ALTER TABLE public.clientes ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de Seguridad: Solo Staff (Admin y Cajero) puede consultar y gestionar clientes
+DROP POLICY IF EXISTS "Clientes legibles por staff" ON public.clientes;
+CREATE POLICY "Clientes legibles por staff" ON public.clientes
+    FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.usuarios 
+            WHERE usuarios.id = auth.uid() AND usuarios.role IN ('Admin', 'Cajero')
+        )
+    );
+
+DROP POLICY IF EXISTS "Clientes modificables por staff" ON public.clientes;
+CREATE POLICY "Clientes modificables por staff" ON public.clientes
+    FOR ALL
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.usuarios 
+            WHERE usuarios.id = auth.uid() AND usuarios.role IN ('Admin', 'Cajero')
+        )
+    ) WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.usuarios 
+            WHERE usuarios.id = auth.uid() AND usuarios.role IN ('Admin', 'Cajero')
+        )
+    );
+
+-- Trigger para updated_at en clientes
+DROP TRIGGER IF EXISTS set_updated_at_clientes ON public.clientes;
+CREATE TRIGGER set_updated_at_clientes
+    BEFORE UPDATE ON public.clientes
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
+
