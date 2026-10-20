@@ -25,6 +25,11 @@ export const metadata = {
     template: '%s | Benmarket Express',
   },
   description: 'Hacé tus compras online en BenMarket Express. Calidad, rapidez y los mejores precios directo a tu casa en Ciudad del Este.',
+  icons: {
+    icon: '/favicon.ico?v=3',
+    apple: '/apple-touch-icon.png',
+  },
+  manifest: '/manifest.json',
   openGraph: {
     title: 'Benmarket Express - Tu Supermercado Online',
     description: 'Hacé tus compras online con entrega rápida. Calidad y variedad en Ciudad del Este.',
@@ -44,7 +49,8 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Benmarket" />
-        <link rel="apple-touch-icon" href="/logo_new.webp" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body className="bg-surface font-body text-on-surface">
         <Script

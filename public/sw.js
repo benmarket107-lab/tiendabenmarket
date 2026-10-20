@@ -1,8 +1,11 @@
-const CACHE_NAME = 'benmarket-v2';
+const CACHE_NAME = 'benmarket-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.json',
-  '/logo_new.webp'
+  '/icon-192.png',
+  '/icon-512.png',
+  '/faviconapp.png',
+  '/apple-touch-icon.png'
 ];
 
 // 1. Instalar SW y precargar assets básicos
@@ -65,8 +68,8 @@ self.addEventListener('push', (event) => {
     const title = data.title || 'Benmarket Express';
     const options = {
       body: data.body || 'Tienes una nueva notificación de tu pedido.',
-      icon: data.icon || '/logo_new.webp',
-      badge: '/logo_new.webp',
+      icon: data.icon || '/icon-192.png',
+      badge: '/icon-192.png',
       vibrate: [200, 100, 200, 100, 200], // Patrón de vibración perceptible
       tag: data.tag || 'benmarket-order-notification',
       renotify: true,

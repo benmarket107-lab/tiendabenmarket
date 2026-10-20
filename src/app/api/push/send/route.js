@@ -55,7 +55,7 @@ export async function POST(req) {
       notificationPayload = {
         title: '🛍️ ¡Nuevo Pedido Pendiente!',
         body: `Cliente: ${pedido.cliente_nombre || 'Cliente'} - Total: Gs. ${formattedTotal}`,
-        icon: '/logo_new.webp',
+        icon: '/icon-192.png',
         url: '/dashboard',
         tag: `nuevo-pedido-${pedido.id || Date.now()}`,
       };
@@ -92,7 +92,7 @@ export async function POST(req) {
       notificationPayload = {
         title,
         body,
-        icon: '/logo_new.webp',
+        icon: '/icon-192.png',
         url: '/orders',
         tag: `pedido-estado-${pedido.id || Date.now()}`,
       };

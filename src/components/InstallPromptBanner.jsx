@@ -81,12 +81,12 @@ export default function InstallPromptBanner() {
     <>
       <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-96 z-50 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-red-100/60 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
         <div className="flex items-start gap-3">
-          <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-sm shrink-0 border border-slate-100 bg-white">
+          <div className="relative w-12 h-12 rounded-2xl overflow-hidden shadow-sm shrink-0 border border-slate-100 bg-white">
             <Image
-              src="/logo_new.webp"
+              src="/icon-192.png"
               alt="Benmarket Express App"
               fill
-              className="object-contain p-1"
+              className="object-contain"
             />
           </div>
 

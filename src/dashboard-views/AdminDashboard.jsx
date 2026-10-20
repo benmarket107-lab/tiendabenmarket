@@ -197,7 +197,7 @@ export default function AdminDashboard() {
                 const totalFormateado = Number(payload.new.total || 0).toLocaleString('es-PY');
                 new Notification('🛍️ ¡Nuevo Pedido Pendiente!', {
                   body: `Cliente: ${payload.new.cliente_nombre || 'Cliente'} - Total: Gs. ${totalFormateado}`,
-                  icon: '/logo_new.webp',
+                  icon: '/icon-192.png',
                 });
               } catch (_) {}
             }
