@@ -651,3 +651,8 @@ CREATE TRIGGER set_updated_at_clientes
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
+-- 11. Columnas para Trazabilidad y Motivo de Cancelación de Pedidos
+ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS motivo_cancelacion TEXT;
+ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS cancelado_at TIMESTAMPTZ;
+ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS cancelado_por TEXT;
+

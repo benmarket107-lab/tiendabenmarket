@@ -137,7 +137,8 @@ export default function OrdersPage() {
     return {
       Pendiente: { label: 'Pendiente', cls: 'bg-amber-100 text-amber-800' },
       Preparando: { label: 'Preparando', cls: 'bg-blue-100 text-blue-800' },
-      Enviado: { label: 'Enviado', cls: 'bg-emerald-100 text-emerald-800' }
+      Enviado: { label: 'Enviado', cls: 'bg-emerald-100 text-emerald-800' },
+      Cancelado: { label: 'Cancelado', cls: 'bg-red-100 text-red-800' }
     };
   }, []);
 
@@ -298,6 +299,19 @@ export default function OrdersPage() {
 
                   {isExpanded && (
                     <div className="px-5 sm:px-6 pb-6">
+                      {pedido.estado === 'Cancelado' && (
+                        <div className="mb-4 bg-red-50 border border-red-200/80 rounded-2xl p-4 animate-in fade-in">
+                          <div className="flex items-center gap-2 text-red-700 font-bold text-sm">
+                            <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                            <span>Pedido Cancelado</span>
+                          </div>
+                          {pedido.motivo_cancelacion && (
+                            <p className="text-xs text-red-900 mt-1 leading-relaxed">
+                              <span className="font-bold">Motivo:</span> {pedido.motivo_cancelacion}
+                            </p>
+                          )}
+                        </div>
+                      )}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/20">
                           <div className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant mb-2">Entrega</div>

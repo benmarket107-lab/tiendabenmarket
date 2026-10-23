@@ -2,27 +2,35 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '../supabaseClient';
 import { formatCurrency } from '../utils/currency';
+import { useAuth } from '../context/AuthContext';
+import { useAppContext } from '../context/AppContext';
 import { 
   Package, Clock, Truck, Play, Check, ExternalLink, 
-  MessageCircle, Search, Bell, Volume2, VolumeX, Eye, X, MapPin, Store, Users
+  MessageCircle, Search, Bell, Volume2, VolumeX, Eye, X, MapPin, Store, Users,
+  Ban, AlertTriangle
 } from 'lucide-react';
 import ClientesModal from '../components/ClientesModal';
 
 export default function SalesHistory() {
+  const { user } = useAuth();
+  const { updatePedidoEstado } = useAppContext();
   const searchParams = useSearchParams();
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('Todos'); // 'Todos' | 'Pendiente' | 'Preparando' | 'Enviado'
+  const [filter, setFilter] = useState('Todos'); // 'Todos' | 'Pendiente' | 'Preparando' | 'Enviado' | 'Cancelado'
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [isMuted, setIsMuted] = useState(() => {
     return localStorage.getItem('cashier_sound_muted') === 'true';
   });
   const [isClientesModalOpen, setIsClientesModalOpen] = useState(false);
+  const [cancelModalPedido, setCancelModalPedido] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     const nextFilter = searchParams?.get('filter');
-    if (nextFilter && ['Todos', 'Pendiente', 'Preparando', 'Enviado'].includes(nextFilter)) {
+    if (nextFilter && ['Todos', 'Pendiente', 'Preparando', 'Enviado', 'Cancelado'].includes(nextFilter)) {
       setFilter(nextFilter);
     }
   }, [searchParams]);
@@ -142,6 +150,68 @@ export default function SalesHistory() {
     }
   };
 
+  const handleOpenCancelModal = (pedido) => {
+    setCancelModalPedido(pedido);
+    setCancelReason('');
+  };
+
+  const handleCloseCancelModal = () => {
+    setCancelModalPedido(null);
+    setCancelReason('');
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelModalPedido || !cancelReason.trim()) return;
+
+    setIsCancelling(true);
+    const id = cancelModalPedido.id;
+    const motivo = cancelReason.trim();
+    const extraFields = {
+      motivo_cancelacion: motivo,
+      cancelado_at: new Date().toISOString(),
+      cancelado_por: user?.name || user?.email || user?.role || 'Staff'
+    };
+
+    try {
+      let updated = null;
+      if (updatePedidoEstado) {
+        updated = await updatePedidoEstado(id, 'Cancelado', extraFields);
+      } else {
+        let { data, error } = await supabase
+          .from('pedidos')
+          .update({ estado: 'Cancelado', ...extraFields })
+          .eq('id', id)
+          .select();
+
+        if (error && error.code === '42703') {
+          const resFallback = await supabase
+            .from('pedidos')
+            .update({
+              estado: 'Cancelado',
+              cliente_nota: (cancelModalPedido.cliente_nota ? cancelModalPedido.cliente_nota + '\n' : '') + `[CANCELADO]: ${motivo}`,
+            })
+            .eq('id', id)
+            .select();
+          data = resFallback.data;
+          error = resFallback.error;
+        }
+
+        if (error) throw error;
+        updated = data?.[0] ? { ...data[0], ...extraFields } : { ...cancelModalPedido, estado: 'Cancelado', ...extraFields };
+      }
+
+      const finalPedido = updated || { ...cancelModalPedido, estado: 'Cancelado', ...extraFields };
+      setPedidos(prev => prev.map(p => (p.id === id ? finalPedido : p)));
+      setSelectedPedido(curr => (curr && curr.id === id ? finalPedido : curr));
+      handleCloseCancelModal();
+    } catch (err) {
+      console.error('Error al cancelar pedido:', err);
+      alert('No se pudo cancelar el pedido. Intenta nuevamente.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const formatPhoneForWhatsApp = (phone) => {
     let clean = phone.replace(/\D/g, '');
     if (clean.startsWith('595')) {
@@ -225,7 +295,7 @@ export default function SalesHistory() {
       <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-white p-3 rounded-2xl border border-slate-200/85 shadow-sm">
         {/* Tabs */}
         <div className="flex flex-wrap gap-1.5">
-          {['Todos', 'Pendiente', 'Preparando', 'Enviado'].map(status => {
+          {['Todos', 'Pendiente', 'Preparando', 'Enviado', 'Cancelado'].map(status => {
             const isActive = filter === status;
             const count = status === 'Todos' ? pedidos.length : countByStatus(status);
             
@@ -234,7 +304,8 @@ export default function SalesHistory() {
               Todos: 'bg-slate-100 text-slate-700',
               Pendiente: 'bg-amber-100 text-amber-800',
               Preparando: 'bg-blue-100 text-blue-800',
-              Enviado: 'bg-emerald-100 text-emerald-800'
+              Enviado: 'bg-emerald-100 text-emerald-800',
+              Cancelado: 'bg-red-100 text-red-800'
             };
 
             return (
@@ -333,25 +404,39 @@ export default function SalesHistory() {
                         {formatCurrency(Number(pedido.total))}
                       </td>
                       <td className="p-4 text-center">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                          pedido.estado === 'Pendiente' 
-                            ? 'bg-amber-100 text-amber-800'
-                            : pedido.estado === 'Preparando'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-emerald-100 text-emerald-800'
-                        }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${
-                            pedido.estado === 'Pendiente'
-                              ? 'bg-amber-500 animate-pulse'
+                        <div className="inline-flex flex-col items-center gap-1">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                            pedido.estado === 'Pendiente' 
+                              ? 'bg-amber-100 text-amber-800'
                               : pedido.estado === 'Preparando'
-                              ? 'bg-blue-500'
-                              : 'bg-emerald-500'
-                          }`}></span>
-                          {pedido.estado}
-                        </span>
+                              ? 'bg-blue-100 text-blue-800'
+                              : pedido.estado === 'Cancelado'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              pedido.estado === 'Pendiente'
+                                ? 'bg-amber-500 animate-pulse'
+                                : pedido.estado === 'Preparando'
+                                ? 'bg-blue-500'
+                                : pedido.estado === 'Cancelado'
+                                ? 'bg-red-500'
+                                : 'bg-emerald-500'
+                            }`}></span>
+                            {pedido.estado}
+                          </span>
+                          {pedido.estado === 'Cancelado' && pedido.motivo_cancelacion && (
+                            <span 
+                              className="text-[10px] text-red-600 font-semibold max-w-[140px] truncate block cursor-help" 
+                              title={`Motivo: ${pedido.motivo_cancelacion}`}
+                            >
+                              {pedido.motivo_cancelacion}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4 pr-6">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1.5">
                           {/* Detalle */}
                           <button
                             onClick={() => setSelectedPedido(pedido)}
@@ -397,6 +482,17 @@ export default function SalesHistory() {
                               <MessageCircle className="w-3.5 h-3.5 text-[#25D366]" /> Mensaje
                             </button>
                           )}
+
+                          {/* Opción Cancelar Pedido (disponible si no está Cancelado) */}
+                          {pedido.estado !== 'Cancelado' && (
+                            <button
+                              onClick={() => handleOpenCancelModal(pedido)}
+                              className="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 p-2 rounded-xl transition-all border border-red-100 active:scale-95"
+                              title="Cancelar Pedido con motivo"
+                            >
+                              <Ban className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -429,6 +525,27 @@ export default function SalesHistory() {
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               
+              {/* Alerta de Cancelación */}
+              {selectedPedido.estado === 'Cancelado' && (
+                <div className="bg-red-50 border border-red-200/80 rounded-2xl p-4 space-y-1.5 animate-in fade-in">
+                  <div className="flex items-center gap-2 text-red-700 font-bold text-sm">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>Pedido Cancelado</span>
+                  </div>
+                  {selectedPedido.motivo_cancelacion && (
+                    <p className="text-xs text-red-900 leading-relaxed">
+                      <span className="font-bold">Motivo:</span> {selectedPedido.motivo_cancelacion}
+                    </p>
+                  )}
+                  {selectedPedido.cancelado_at && (
+                    <p className="text-[11px] text-red-500 font-medium">
+                      Cancelado el {new Date(selectedPedido.cancelado_at).toLocaleString('es-PY')}
+                      {selectedPedido.cancelado_por ? ` por ${selectedPedido.cancelado_por}` : ''}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Cliente & Entrega Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -556,11 +673,127 @@ export default function SalesHistory() {
                 </button>
               )}
 
+              {selectedPedido.estado !== 'Cancelado' && (
+                <button
+                  onClick={() => handleOpenCancelModal(selectedPedido)}
+                  className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold text-sm py-2.5 px-4 rounded-xl flex items-center gap-1.5 active:scale-95 transition-all"
+                  title="Cancelar Pedido con motivo"
+                >
+                  <Ban className="w-4 h-4" /> Cancelar Pedido
+                </button>
+              )}
+
               <button
                 onClick={() => setSelectedPedido(null)}
                 className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-sm py-2.5 px-4 rounded-xl transition-all"
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Cancelación de Pedido con Motivo */}
+      {cancelModalPedido && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-100 flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-red-50/50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-headline font-bold text-base text-slate-900">Cancelar Pedido</h3>
+                  <span className="font-mono text-xs text-slate-500">
+                    #{cancelModalPedido.id?.slice(0, 8)} • {cancelModalPedido.cliente_nombre}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={handleCloseCancelModal}
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-white rounded-lg transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Indica el motivo de la cancelación. Quedará registrado en el pedido para futuras consultas y auditoría.
+              </p>
+
+              {/* Opciones rápidas */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Motivos frecuentes:
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'Cliente solicitó cancelación',
+                    'Sin stock del producto',
+                    'Dirección fuera de cobertura',
+                    'No responde a confirmación',
+                    'Pedido duplicado o error'
+                  ].map((quickReason) => (
+                    <button
+                      key={quickReason}
+                      type="button"
+                      onClick={() => setCancelReason(quickReason)}
+                      className={`text-xs px-2.5 py-1.5 rounded-xl border transition-all ${
+                        cancelReason === quickReason
+                          ? 'bg-red-50 border-red-300 text-red-700 font-bold'
+                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {quickReason}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Input libre de motivo */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Detalle del motivo <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Escribe el motivo detallado de la cancelación..."
+                  className="w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all resize-none"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2.5">
+              <button
+                type="button"
+                disabled={isCancelling}
+                onClick={handleCloseCancelModal}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all"
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                disabled={!cancelReason.trim() || isCancelling}
+                onClick={handleConfirmCancel}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-sm shadow-red-600/20 transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+              >
+                {isCancelling ? (
+                  <span>Cancelando...</span>
+                ) : (
+                  <>
+                    <Ban className="w-3.5 h-3.5" />
+                    <span>Confirmar Cancelación</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

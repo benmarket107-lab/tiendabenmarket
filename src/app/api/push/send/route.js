@@ -87,6 +87,11 @@ export async function POST(req) {
       } else if (estado === 'Entregado') {
         title = '✅ ¡Pedido entregado!';
         body = '¡Gracias por comprar en Benmarket Express! Que lo disfrutes.';
+      } else if (estado === 'Cancelado') {
+        title = '❌ Tu pedido fue cancelado';
+        body = pedido.motivo_cancelacion
+          ? `Motivo: ${pedido.motivo_cancelacion}`
+          : 'Tu pedido ha sido cancelado. Puedes contactar a la tienda si necesitas ayuda.';
       }
 
       notificationPayload = {
