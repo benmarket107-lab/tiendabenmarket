@@ -46,8 +46,8 @@ export default function ProductCard({ product }) {
             </span>
           )}
           {product.stock === 0 && (
-            <span className="bg-surface-variant/90 backdrop-blur-md text-on-surface text-[9px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full uppercase tracking-wider shadow-sm">
-              Agotado
+            <span className="bg-amber-500/90 text-white text-[9px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full uppercase tracking-wider shadow-sm backdrop-blur-md">
+              Stock a confirmar
             </span>
           )}
         </div>
@@ -94,15 +94,11 @@ export default function ProductCard({ product }) {
               e.stopPropagation();
               addToCart(product);
             }}
-            disabled={product.stock === 0}
-            className={`h-8 w-8 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-300 active:scale-95 ${
-              product.stock === 0 
-                ? 'bg-surface-variant text-outline cursor-not-allowed opacity-70'
-                : 'bg-primary text-on-primary hover:bg-primary-container hover:shadow-lg hover:shadow-primary/30 group-hover:-translate-y-1'
-            }`}
+            className="h-8 w-8 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-300 active:scale-95 bg-primary text-on-primary hover:bg-primary-container hover:shadow-lg hover:shadow-primary/30 group-hover:-translate-y-1"
             aria-label="Agregar al carrito"
+            title={product.stock === 0 ? "Pedir (Stock a confirmar)" : "Agregar al carrito"}
           >
-            {product.stock === 0 ? <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" /> : <Plus className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.5} />}
+            <Plus className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.5} />
           </button>
         </div>
       </div>

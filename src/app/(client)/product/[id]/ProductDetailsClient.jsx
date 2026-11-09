@@ -86,7 +86,7 @@ export default function ProductDetailsClient({ initialProduct = null }) {
   const fav = isFavorite(product.id);
 
   const increaseQuantity = () => {
-    if (quantity < product.stock) setQuantity(prev => prev + 1);
+    setQuantity(prev => prev + 1);
   };
 
   const decreaseQuantity = () => {
@@ -168,8 +168,8 @@ export default function ProductDetailsClient({ initialProduct = null }) {
               </span>
             )}
             {product.stock === 0 && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 text-red-700 text-sm font-bold border border-red-200">
-                Agotado
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 text-sm font-bold border border-amber-200">
+                <ShieldCheck className="w-4 h-4 text-amber-600" /> Stock a confirmar por WhatsApp
               </span>
             )}
           </div>
@@ -179,7 +179,7 @@ export default function ProductDetailsClient({ initialProduct = null }) {
             <div className="flex items-center bg-slate-50 border border-slate-200 rounded-2xl p-1 w-full sm:w-36 h-14 shadow-sm">
               <button 
                 onClick={decreaseQuantity}
-                disabled={quantity <= 1 || product.stock === 0}
+                disabled={quantity <= 1}
                 className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-xl transition-all disabled:opacity-50 disabled:hover:bg-transparent"
               >
                 <Minus className="w-5 h-5" />
@@ -187,8 +187,7 @@ export default function ProductDetailsClient({ initialProduct = null }) {
               <span className="flex-1 text-center font-bold text-lg">{quantity}</span>
               <button 
                 onClick={increaseQuantity}
-                disabled={quantity >= product.stock || product.stock === 0}
-                className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-xl transition-all disabled:opacity-50 disabled:hover:bg-transparent"
+                className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-xl transition-all"
               >
                 <Plus className="w-5 h-5" />
               </button>
@@ -196,17 +195,14 @@ export default function ProductDetailsClient({ initialProduct = null }) {
             
             <button 
               onClick={handleAddToCart}
-              disabled={product.stock === 0}
               className={`flex-1 h-14 rounded-2xl flex items-center justify-center gap-3 font-bold text-lg transition-all ${
-                product.stock === 0 
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  : isAdded
-                    ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
-                    : 'bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/25 hover:-translate-y-1'
+                isAdded
+                  ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
+                  : 'bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/25 hover:-translate-y-1'
               }`}
             >
               <ShoppingCart className="w-6 h-6" /> 
-              {product.stock === 0 ? 'Sin Stock' : isAdded ? '¡Agregado!' : 'Agregar al carrito'}
+              {isAdded ? '¡Agregado!' : (product.stock === 0 ? 'Pedir (Stock a confirmar)' : 'Agregar al carrito')}
             </button>
           </div>
 

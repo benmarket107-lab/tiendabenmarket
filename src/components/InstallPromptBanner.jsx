@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { Download, X, Share2, PlusSquare, Smartphone } from 'lucide-react';
 import Image from 'next/image';
 
+const STORAGE_KEY_DISMISSED = 'benmarket_pwa_dismissed';
+const STORAGE_KEY_SHOWN = 'benmarket_pwa_shown';
+
 export default function InstallPromptBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showBanner, setShowBanner] = useState(false);
@@ -18,12 +21,11 @@ export default function InstallPromptBanner() {
 
     if (isStandalone) return;
 
-    // 2. Revisar si el usuario lo descartó recientemente (en los últimos 3 días)
-    const dismissedAt = localStorage.getItem('benmarket_pwa_dismissed');
-    if (dismissedAt) {
-      const daysSinceDismissed = (Date.now() - Number(dismissedAt)) / (1000 * 60 * 60 * 24);
-      if (daysSinceDismissed < 3) return;
-    }
+    // 2. Si el usuario ya rechazó la instalación o ya se mostró una vez, no volver a mostrar
+    const isDismissed = localStorage.getItem(STORAGE_KEY_DISMISSED);
+    const hasBeenShown = localStorage.getItem(STORAGE_KEY_SHOWN);
+
+    if (isDismissed || hasBeenShown) return;
 
     // 3. Detectar iOS Safari
     const userAgent = window.navigator.userAgent.toLowerCase();
@@ -33,16 +35,22 @@ export default function InstallPromptBanner() {
     // 4. Capturar evento nativo en Android/Chrome/Desktop
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
+      // Doble comprobación antes de mostrar
+      if (localStorage.getItem(STORAGE_KEY_DISMISSED) || localStorage.getItem(STORAGE_KEY_SHOWN)) return;
+      
+      localStorage.setItem(STORAGE_KEY_SHOWN, 'true');
       setDeferredPrompt(e);
       setShowBanner(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Para iOS, mostrar después de 3 segundos si no está instalada
+    // Para iOS, mostrar después de 3 segundos si no está instalada y no se mostró antes
     let iosTimer;
     if (isIosDevice && !isStandalone) {
       iosTimer = setTimeout(() => {
+        if (localStorage.getItem(STORAGE_KEY_DISMISSED) || localStorage.getItem(STORAGE_KEY_SHOWN)) return;
+        localStorage.setItem(STORAGE_KEY_SHOWN, 'true');
         setShowBanner(true);
       }, 3000);
     }
@@ -63,16 +71,23 @@ export default function InstallPromptBanner() {
 
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setShowBanner(false);
-    }
+    // Tanto si acepta como si cancela, registrar para no volver a molestar
+    localStorage.setItem(STORAGE_KEY_DISMISSED, 'true');
+    setShowBanner(false);
     setDeferredPrompt(null);
   };
 
   const handleDismiss = () => {
     setShowBanner(false);
     setShowIOSInstructions(false);
-    localStorage.setItem('benmarket_pwa_dismissed', Date.now().toString());
+    // Si el usuario pone que no quiere instalar ("Ahora no" o cerrar), no volver a mostrar nunca
+    localStorage.setItem(STORAGE_KEY_DISMISSED, 'true');
+  };
+
+  const handleCloseIOS = () => {
+    setShowIOSInstructions(false);
+    setShowBanner(false);
+    localStorage.setItem(STORAGE_KEY_DISMISSED, 'true');
   };
 
   if (!showBanner) return null;
@@ -136,7 +151,7 @@ export default function InstallPromptBanner() {
                 <h3 className="font-bold text-base">Instalar en tu iPhone o iPad</h3>
               </div>
               <button
-                onClick={() => setShowIOSInstructions(false)}
+                onClick={handleCloseIOS}
                 className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
@@ -159,7 +174,7 @@ export default function InstallPromptBanner() {
             </ol>
 
             <button
-              onClick={() => setShowIOSInstructions(false)}
+              onClick={handleCloseIOS}
               className="w-full mt-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-black transition"
             >
               Entendido

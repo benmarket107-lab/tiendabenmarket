@@ -476,16 +476,12 @@ BEGIN
             RAISE EXCEPTION 'Producto no encontrado: %', item_record->>'id';
         END IF;
 
-        IF producto_db.cantidad_disponible < (item_record->>'quantity')::numeric THEN
-            RAISE EXCEPTION 'Stock insuficiente para el producto: %', producto_db.nombre;
-        END IF;
-
         -- Acumular subtotal usando el precio REAL de la base de datos
         calculated_subtotal := calculated_subtotal + (producto_db.precio * (item_record->>'quantity')::numeric);
 
-        -- Descontar stock
+        -- Descontar stock disponible hasta 0 (sin que quede negativo ni bloquee la compra; el cajero confirma faltantes por WhatsApp)
         UPDATE public.productos
-        SET cantidad_disponible = cantidad_disponible - (item_record->>'quantity')::numeric
+        SET cantidad_disponible = GREATEST(0, COALESCE(cantidad_disponible, 0) - (item_record->>'quantity')::numeric)
         WHERE codigo_producto = producto_db.codigo_producto;
 
         -- Construir el nuevo array de items con precios reales

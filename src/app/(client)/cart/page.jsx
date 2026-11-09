@@ -64,11 +64,16 @@ export default function CartPage() {
               <div className="flex-grow min-w-0 pr-6 sm:pr-0">
                 <p className="text-[10px] sm:text-xs font-bold text-primary mb-0.5 uppercase tracking-widest">{item.category}</p>
                 <h3 className="text-sm sm:text-lg font-bold text-slate-800 line-clamp-1 leading-snug">{item.name}</h3>
-                <div className="flex items-center gap-2 mt-0.5">
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                   <p className="text-xs sm:text-sm text-slate-500 font-semibold">{formatCurrency(item.price)} c/u</p>
                   {item.discount > 0 && (
                     <span className="text-[10px] sm:text-xs text-slate-400 line-through">
                       {formatCurrency(item.originalPrice)}
+                    </span>
+                  )}
+                  {item.stock === 0 && (
+                    <span className="text-[10px] sm:text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                      Stock a confirmar
                     </span>
                   )}
                 </div>
@@ -86,8 +91,7 @@ export default function CartPage() {
                     <span className="w-6 text-center font-bold text-xs text-slate-800">{item.quantity}</span>
                     <button 
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      disabled={item.quantity >= item.stock}
-                      className="p-1 hover:bg-white rounded shadow-sm text-slate-600 disabled:opacity-40 transition-colors"
+                      className="p-1 hover:bg-white rounded shadow-sm text-slate-600 transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
@@ -108,8 +112,7 @@ export default function CartPage() {
                 <span className="w-8 text-center font-bold text-slate-800">{item.quantity}</span>
                 <button 
                   onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                  disabled={item.quantity >= item.stock}
-                  className="p-1 hover:bg-white rounded shadow-sm text-slate-600 disabled:opacity-50 transition-colors"
+                  className="p-1 hover:bg-white rounded shadow-sm text-slate-600 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                 </button>

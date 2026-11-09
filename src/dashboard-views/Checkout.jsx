@@ -45,7 +45,7 @@ export default function Checkout() {
 
     const itemLines = cart
       .map(item => {
-        let line = `  • ${item.quantity}x ${item.name} (${formatCurrency(item.price)} c/u) → ${formatCurrency(item.price * item.quantity)}\n    _Cód: ${item.id}_`;
+        let line = `  • ${item.quantity}x ${item.name} (${formatCurrency(item.price)} c/u) → ${formatCurrency(item.price * item.quantity)}\n    _Cód: ${item.id}_${item.stock === 0 ? ' ⚠️ _(Stock a confirmar)_' : ''}`;
         line += `\n    🔗 _Ver producto:_ ${window.location.origin}/product/${encodeURIComponent(item.id)}`;
         return line;
       })
@@ -116,21 +116,15 @@ export default function Checkout() {
     } catch (err) {
       console.error("Error creating order:", err);
       
-      if (err.message && err.message.includes('Stock insuficiente')) {
-        alert(`❌ Atención: ${err.message}. Por favor revisá tu carrito e intentá nuevamente.`);
-        setIsSubmitting(false);
-        return;
-      }
-
-      alert("Hubo un error al guardar tu pedido en el sistema. De todos modos podés enviarlo manualmente por WhatsApp.");
-      
-      // Fallback
+      // Si por alguna razón falla el guardado en base de datos,
+      // no bloqueamos la compra: el cliente sigue a WhatsApp y el cajero confirma el stock y pedido
       const message = buildWhatsAppMessage();
       const encodedMessage = encodeURIComponent(message);
       const targetNumber = whatsappNumber || import.meta.env.VITE_WHATSAPP_NUMBER || '595981000000';
       const whatsappUrl = `https://wa.me/${targetNumber}?text=${encodedMessage}`;
       
       setIsRedirecting(true);
+      clearCart();
       window.location.href = whatsappUrl;
     } finally {
       setIsSubmitting(false);
