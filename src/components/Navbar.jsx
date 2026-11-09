@@ -230,7 +230,7 @@ export default function Navbar() {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => navigate('/dashboard?filter=Pendiente')}
+                  onClick={() => navigate('/dashboard/orders?filter=Pendiente')}
                   className="text-xs font-bold bg-amber-400 text-amber-950 hover:bg-amber-300 px-3 py-1 rounded-lg transition-colors"
                 >
                   Ver pedidos
@@ -407,7 +407,7 @@ export default function Navbar() {
                           )}
                         </button>
                         <button
-                          onClick={() => navigate('/dashboard?filter=Pendiente')}
+                          onClick={() => navigate('/dashboard/orders?filter=Pendiente')}
                           className="relative p-2 hover:bg-white/10 rounded-xl transition-all group text-white flex items-center justify-center"
                           title="Pedidos pendientes"
                           aria-label="Pedidos pendientes"
@@ -597,7 +597,7 @@ export default function Navbar() {
                     <button
                       onClick={() => {
                         setIsMobileMenuOpen(false);
-                        navigate('/dashboard?filter=Pendiente');
+                        navigate('/dashboard/orders?filter=Pendiente');
                       }}
                       className="flex items-center justify-between gap-3 text-white hover:bg-white/10 p-3 rounded-xl transition-colors font-bold"
                     >

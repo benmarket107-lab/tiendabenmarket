@@ -427,18 +427,32 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const updatePedidoEstado = async (id, estado) => {
-    const { data, error } = await supabase
+  const updatePedidoEstado = async (id, estado, extraFields = {}) => {
+    let payload = { estado, ...extraFields };
+    let { data, error } = await supabase
       .from('pedidos')
-      .update({ estado })
+      .update(payload)
       .eq('id', id)
       .select();
+
+    // Fallback de resiliencia: si las columnas de cancelación aún no fueron ejecutadas en el SQL de Supabase (error 42703)
+    if (error && error.code === '42703' && extraFields.motivo_cancelacion) {
+      const fallbackNota = `[CANCELADO]: ${extraFields.motivo_cancelacion}`;
+      const resFallback = await supabase
+        .from('pedidos')
+        .update({ estado, cliente_nota: fallbackNota })
+        .eq('id', id)
+        .select();
+      data = resFallback.data;
+      error = resFallback.error;
+    }
+
     if (error) {
       console.error('Error updating order state in Supabase:', error);
       throw error;
     }
     if (data && data[0]) {
-      const pedidoActualizado = data[0];
+      const pedidoActualizado = { ...data[0], ...extraFields };
       setPedidos(prev => prev.map(p => p.id === id ? pedidoActualizado : p));
 
       // Disparar Web Push asíncrono al Cliente con el nuevo estado

@@ -26,7 +26,8 @@ export const metadata = {
   },
   description: 'Hacé tus compras online en BenMarket Express. Calidad, rapidez y los mejores precios directo a tu casa en Ciudad del Este.',
   icons: {
-    icon: '/favicon.ico?v=3',
+    icon: '/favicon.ico?v=4',
+    shortcut: '/favicon.ico?v=4',
     apple: '/apple-touch-icon.png',
   },
   manifest: '/manifest.json',
@@ -43,7 +44,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es" className={`${plusJakartaSans.variable} ${inter.variable}`}>
       <head>
-        <link rel="icon" type="image/x-icon" href="/favicon.ico?v=3" />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico?v=4" sizes="48x48" />
+        <link rel="shortcut icon" href="/favicon.ico?v=4" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#b91c1c" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

@@ -327,7 +327,8 @@ export default function AdminDashboard() {
       subtitle: `${totalOrders} pedidos registrados`,
       icon: DollarSign, 
       color: 'text-emerald-600', 
-      bg: 'bg-emerald-50 border-emerald-200' 
+      bg: 'bg-emerald-50 border-emerald-200',
+      link: '/dashboard/orders?filter=Todos'
     },
     { 
       title: 'Pedidos Pendientes', 
@@ -335,7 +336,8 @@ export default function AdminDashboard() {
       subtitle: pendingOrdersCount > 0 ? '⚠️ Requieren atención' : 'Todo al día',
       icon: Clock, 
       color: pendingOrdersCount > 0 ? 'text-amber-600' : 'text-slate-600', 
-      bg: pendingOrdersCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200' 
+      bg: pendingOrdersCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200',
+      link: '/dashboard/orders?filter=Pendiente'
     },
     { 
       title: 'Ticket Promedio', 
@@ -373,6 +375,21 @@ export default function AdminDashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+          {/* Botón Gestión y Despacho de Pedidos */}
+          <Link
+            href="/dashboard/orders"
+            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all shadow-md active:scale-95"
+            title="Ir a la pantalla de despacho y gestión operativa de pedidos"
+          >
+            <ShoppingBag className="w-4 h-4 text-amber-400" />
+            <span>Mesa de Pedidos</span>
+            {pendingOrdersCount > 0 && (
+              <span className="bg-amber-400 text-slate-950 text-[10px] font-black rounded-full px-2 py-0.5 ml-0.5 shadow-sm">
+                {pendingOrdersCount}
+              </span>
+            )}
+          </Link>
+
           {/* Botón Abrir Modal de Clientes y Promociones */}
           <button
             onClick={() => setIsClientesModalOpen(true)}
@@ -440,23 +457,29 @@ export default function AdminDashboard() {
 
       {/* Tarjetas de Estadísticas Principales */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {statCards.map((stat, i) => (
-          <div 
-            key={i} 
-            className={`p-6 rounded-3xl bg-white border ${stat.bg} shadow-sm hover:shadow-md transition-all flex flex-col justify-between`}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{stat.title}</span>
-              <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color}`}>
-                <stat.icon className="w-6 h-6" />
+        {statCards.map((stat, i) => {
+          const CardTag = stat.link ? Link : 'div';
+          return (
+            <CardTag 
+              key={i} 
+              href={stat.link}
+              className={`p-6 rounded-3xl bg-white border ${stat.bg} shadow-sm hover:shadow-md transition-all flex flex-col justify-between ${
+                stat.link ? 'cursor-pointer hover:-translate-y-0.5 active:scale-[0.99]' : ''
+              }`}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{stat.title}</span>
+                <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color}`}>
+                  <stat.icon className="w-6 h-6" />
+                </div>
               </div>
-            </div>
-            <div>
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-headline tracking-tight">{stat.value}</h3>
-              <p className="text-xs font-semibold text-slate-400 mt-1">{stat.subtitle}</p>
-            </div>
-          </div>
-        ))}
+              <div>
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-headline tracking-tight">{stat.value}</h3>
+                <p className="text-xs font-semibold text-slate-400 mt-1">{stat.subtitle}</p>
+              </div>
+            </CardTag>
+          );
+        })}
       </div>
 
       {/* SECCIÓN 1: PRODUCTOS MÁS VENDIDOS (RANKING) */}
@@ -554,7 +577,7 @@ export default function AdminDashboard() {
               <p className="text-xs text-slate-500">Haz clic en un pedido para ver el detalle de productos</p>
             </div>
             <Link 
-              href="/dashboard?filter=Todos" 
+              href="/dashboard/orders?filter=Todos" 
               className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
             >
               Ver todos <ChevronRight className="w-4 h-4" />
@@ -680,7 +703,8 @@ export default function AdminDashboard() {
                   </h3>
                   <span className={`text-xs font-black px-3 py-1 rounded-full ${
                     selectedPedido.estado === 'Pendiente' ? 'bg-amber-100 text-amber-800' :
-                    selectedPedido.estado === 'Preparando' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'
+                    selectedPedido.estado === 'Preparando' ? 'bg-blue-100 text-blue-800' :
+                    selectedPedido.estado === 'Cancelado' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
                   }`}>
                     {selectedPedido.estado}
                   </span>
@@ -696,6 +720,27 @@ export default function AdminDashboard() {
                 <X className="w-6 h-6" />
               </button>
             </div>
+
+            {/* Alerta de Cancelación */}
+            {selectedPedido.estado === 'Cancelado' && (
+              <div className="mb-6 bg-red-50 border border-red-200/80 rounded-2xl p-4">
+                <div className="flex items-center gap-2 text-red-700 font-bold text-sm">
+                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                  <span>Pedido Cancelado</span>
+                </div>
+                {selectedPedido.motivo_cancelacion && (
+                  <p className="text-xs text-red-900 mt-1 leading-relaxed">
+                    <span className="font-bold">Motivo:</span> {selectedPedido.motivo_cancelacion}
+                  </p>
+                )}
+                {selectedPedido.cancelado_at && (
+                  <p className="text-[11px] text-red-500 mt-0.5 font-medium">
+                    Cancelado el {new Date(selectedPedido.cancelado_at).toLocaleString('es-PY')}
+                    {selectedPedido.cancelado_por ? ` por ${selectedPedido.cancelado_por}` : ''}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Datos del Cliente y Envío */}
             <div className="bg-slate-50 rounded-2xl p-4 mb-6 space-y-2 border border-slate-100">

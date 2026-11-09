@@ -10,6 +10,7 @@ export default function Sidebar({ role }) {
   const menuItems = {
     Admin: [
       { path: '/dashboard', name: 'Dashboard Global', icon: BarChart },
+      { path: '/dashboard/orders', name: 'Gestión de Pedidos', icon: ShoppingBag },
       { path: '/dashboard/clients', name: 'Clientes & Promociones', icon: MessageCircle },
       { path: '/dashboard/theme', name: 'Personalizar Marca', icon: Palette },
       { path: '/dashboard/delivery', name: 'Configuración Tienda', icon: Settings },
@@ -39,7 +40,7 @@ export default function Sidebar({ role }) {
       <nav className="p-4 space-y-2 mt-4">
         {links.map((link) => {
           const Icon = link.icon;
-          const isActive = pathname === link.path;
+          const isActive = pathname === link.path || (role === 'Cajero' && link.path === '/dashboard' && pathname === '/dashboard/orders');
           return (
             <Link
               key={link.path}

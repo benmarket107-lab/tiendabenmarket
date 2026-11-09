@@ -4,18 +4,21 @@ import { useAuth } from '../../context/AuthContext';
 import AdminDashboard from '../../dashboard-views/AdminDashboard';
 import SalesHistory from '../../dashboard-views/SalesHistory';
 import TesoreriaDashboard from '../../dashboard-views/TesoreriaDashboard';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (!loading && (!user || user.role === 'Cliente')) {
       router.replace('/');
+    } else if (!loading && user?.role === 'Admin' && searchParams?.get('filter')) {
+      router.replace(`/dashboard/orders?${searchParams.toString()}`);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, searchParams]);
 
   if (loading) {
     return (
